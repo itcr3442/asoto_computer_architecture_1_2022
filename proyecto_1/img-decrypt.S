@@ -10,7 +10,7 @@
 main:
 	push  %rbp
 	movq  %rsp, %rbp
-	subq  $16, $rsp
+	subq  $16, %rsp
 	push  %rbx
 	push  %r12
 
@@ -24,9 +24,11 @@ main:
 	leaq  scanf_format(%rip), %rdi
 	leaq  1(%rbx), %rsi
 	movq  %rbx, %rdx
+	leaq  3(%rbx), %rcx
+	leaq  2(%rbx), %r8
 	xorl  %eax, %eax
 	call  scanf
-	addq  $2, %rbx
+	addq  $4, %rbx
 	cmpq  %r12, %rbx
 	jb    .load_buf
 	movq  -8(%rbp), %rdi
@@ -40,4 +42,4 @@ main:
 
 .section .rodata
 scanf_format:
-	.asciz " %hhu %hhu "
+	.asciz " %hhu %hhu %hhu %hhu"
