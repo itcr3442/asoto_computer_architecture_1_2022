@@ -42,6 +42,68 @@
 \pagestyle{plain}
 \thispagestyle{plain}
 
+\section{Diseño}
+
+\subsection{Requerimientos}
+
+\subsection{Opciones para ISA base}
+
+\subsubsection{x86-64}
+
+\subsubsection{AArch64}
+
+\subsubsection{RV64I}
+
+\subsection{Exponenciación modular}
+
+\subsection{Técnicas de división de enteros}
+
+\subsubsection{División por hardware}
+
+\subsubsection{Inverso multiplicativo modular}
+
+\subsubsection{Aritmética de punto fijo}
+
+\subsection{Oportunidades de optimización en el caso concreto}
+
+\subsubsection{Respecto a límites conocidos}
+
+\subsubsection{Memoización de la relación ciphertext-plaintext}
+
+\subsubsection{Vectorización del bucle principal}
+
+\subsection{Propuestas de solución}
+
+\subsubsection{RV64IMV}
+
+\subsubsection{x86-64, AVX2}
+
+\subsection{Comparación de propuestas}
+
+\section{Implementación}
+
+\subsection{Inicialización}
+
+\subsubsection{Disposición en memoria y carriles SIMD}
+
+\subsubsection{Precálculo de constantes para división rápida}
+
+\subsection{Bucle principal}
+
+\subsubsection{Tabla de búsqueda optimista}
+
+\subsubsection{Exponenciación modular de LSB a MSB}
+
+\subsubsection{Núcleo $\alpha := \alpha m \mod n$}
+
+\subsection{Interfaz de usuario}
+
+\subsubsection{Invocación}
+
+\subsubsection{Visualización}
+
+\subsection{Resultados}
+
 \printbibliography[title={Referencias}]
 
 \end{document}

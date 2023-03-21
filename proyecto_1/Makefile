@@ -1,8 +1,10 @@
 #TODO
 all:
 
+TEX_TMP = $(addprefix doc/proyecto-i.,aux bbl bcf blg fls log out pdf run.xml fdb_latexmk)
+
 clean:
-	rm -rf doc/{}
+	rm -rf $(TEX_TMP)
 
 doc: doc/proyecto-i.pdf
 
