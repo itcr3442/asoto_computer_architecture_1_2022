@@ -10,7 +10,7 @@
       devShells.${system} =
         let
           default =
-            { biber, mkShell, texlive }:
+            { biber, gnumake, mkShell, texlive }:
             mkShell {
               nativeBuildInputs = [
                 biber
