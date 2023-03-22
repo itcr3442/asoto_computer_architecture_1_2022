@@ -9,42 +9,42 @@
 
 .global main
 main:
-	push  %rbp
-	movq  %rsp, %rbp
-	subq  $24, %rsp
-	andq  $-32, %rsp
-	subq  $64, %rsp
-	push  %rbx
-	push  %r12
+	push         %rbp
+	movq         %rsp, %rbp
+	subq         $24, %rsp
+	andq         $-32, %rsp
+	subq         $64, %rsp
+	push         %rbx
+	push         %r12
 
-	movl  $((BUFFER_SIZE >> 5) + 1), %edi
-	movl  $32, %esi
-	call  calloc
-	movq  %rax, -16(%rbp)
-	addq  $32, %rax
-	andq  $-32, %rax
-	movq  %rax, %rbx
-	movq  %rax, -8(%rbp)
+	movl         $((BUFFER_SIZE >> 5) + 1), %edi
+	movl         $32, %esi
+	call         calloc
+	movq         %rax, -16(%rbp)
+	addq         $32, %rax
+	andq         $-32, %rax
+	movq         %rax, %rbx
+	movq         %rax, -8(%rbp)
 
-	leaq  BUFFER_SIZE(%rbx), %r12
-.load_buf:
-	leaq  scanf_format(%rip), %rdi
-	leaq  1(%rbx), %rsi
-	movq  %rbx, %rdx
-	leaq  5(%rbx), %rcx
-	leaq  4(%rbx), %r8
-	xorl  %eax, %eax
-	call  scanf
-	addq  $8, %rbx
-	cmpq  %r12, %rbx
-	jb    .load_buf
+	leaq         BUFFER_SIZE(%rbx), %r12
+.load_buf:       
+	leaq         scanf_format(%rip), %rdi
+	leaq         1(%rbx), %rsi
+	movq         %rbx, %rdx
+	leaq         5(%rbx), %rcx
+	leaq         4(%rbx), %r8
+	xorl         %eax, %eax
+	call         scanf
+	addq         $8, %rbx
+	cmpq         %r12, %rbx
+	jb           .load_buf
 
-	movl  $((1 << (16 + 2 - 5)) + 1), %edi
-	movl  $32, %esi
-	call  calloc
-	movq  %rax, -24(%rbp)
-	addq  $32, %rax
-	andq  $-32, %rax
+	movl         $((1 << (16 + 2 - 5)) + 1), %edi
+	movl         $32, %esi
+	call         calloc
+	movq         %rax, -24(%rbp)
+	addq         $32, %rax
+	andq         $-32, %rax
 
 	movq         -8(%rbp), %rbx
 	vpxor        %ymm5, %ymm5, %ymm5
@@ -137,40 +137,40 @@ main:
 .done:
 	vzeroall
 
-	movq  -8(%rbp), %rbx
+	movq         -8(%rbp), %rbx
 .output:
-	movl  (%rbx), %edi
-	#test  %edi, %edi
-	#jz    .bad_decrypt
-	cmpl  $256, %edi
-	#ja    .bad_decrypt
-	jae    .bad_decrypt
-	andl  $0xff, %edi
-	call  putchar
-	addq  $4, %rbx
-	cmpq  %r12, %rbx
-	jb    .output
+	movl         (%rbx), %edi
+	#test        %edi, %edi
+	#jz          .bad_decrypt
+	cmpl         $256, %edi
+	#ja          .bad_decrypt
+	jae          .bad_decrypt
+	andl         $0xff, %edi
+	call         putchar
+	addq         $4, %rbx
+	cmpq         %r12, %rbx
+	jb           .output
 
-	xorl  %eax, %eax
+	xorl         %eax, %eax
 .exit:
-	movl  %eax, -4(%rbp)
-	movq  -16(%rbp), %rdi
-	call  free
-	movq  -24(%rbp), %rdi
-	call  free
+	movl         %eax, -4(%rbp)
+	movq         -16(%rbp), %rdi
+	call         free
+	movq         -24(%rbp), %rdi
+	call         free
 
-	pop   %r12
-	pop   %rbx
-	movl  -4(%rbp), %eax
+	pop          %r12
+	pop          %rbx
+	movl         -4(%rbp), %eax
 	leave
 	ret
 
 .bad_decrypt:
-	leaq  bad_decrypt_msg(%rip), %rdi
-	movq  stderr(%rip), %rsi
-	call  fputs
-	movl  $1, %eax
-	jmp   .exit
+	leaq         bad_decrypt_msg(%rip), %rdi
+	movq         stderr(%rip), %rsi
+	call         fputs
+	movl         $1, %eax
+	jmp          .exit
 
 .section .rodata
 scanf_format:
