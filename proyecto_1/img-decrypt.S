@@ -54,19 +54,68 @@ main:
 .decrypt:
 	vmovdqa      (%rbx), %ymm0
 	vmovdqa      32(%rbx), %ymm1
+.decrypt:
 	vmovdqa      %ymm8, %ymm2
 	vmovdqa      %ymm8, %ymm3
 	movl         $1631, %edx # d
 .pow_mod:
 	testl        $1, %edx
 	jz           .skip_bit
-	#TODO: r = (r * m) % n
+	vpmulld      %ymm0, %ymm2, %ymm2
+	vpmulld      %ymm1, %ymm3, %ymm3
+	vpmuludq     %ymm9, %ymm2, %ymm6
+	vpmuludq     %ymm9, %ymm3, %ymm7
+	vpsrlq       $32, %ymm2, %ymm4
+	vpsrlq       $32, %ymm3, %ymm5
+	vpsrlq       $32, %ymm6, %ymm6
+	vpsrlq       $32, %ymm7, %ymm7
+	vpmuludq     %ymm9, %ymm4, %ymm4
+	vpmuludq     %ymm9, %ymm5, %ymm5
+	vpblendd     $0b10101010, %ymm4, %ymm6, %ymm4
+	vpblendd     $0b10101010, %ymm5, %ymm7, %ymm5
+	vpsubd       %ymm4, %ymm2, %ymm6
+	vpsubd       %ymm5, %ymm3, %ymm7
+	vpsrlvd      %ymm10, %ymm6, %ymm6
+	vpsrlvd      %ymm10, %ymm7, %ymm7
+	vpaddd       %ymm4, %ymm6, %ymm4
+	vpaddd       %ymm5, %ymm7, %ymm5
+	vpsrlvd      %ymm11, %ymm4, %ymm4
+	vpsrlvd      %ymm11, %ymm5, %ymm5
+	vpmulld      %ymm4, %ymm12, %ymm4
+	vpmulld      %ymm5, %ymm12, %ymm5
+	vpsubd       %ymm4, %ymm2, %ymm2
+	vpsubd       %ymm5, %ymm3, %ymm3
 .skip_bit:
 	shrl         %edx
 	jz           .end_block
-	#TODO: m = (m * m) % n
+	pow_kernel   %ymm0, %ymm1
+	vpmulld      %ymm0, %ymm0, %ymm0
+	vpmulld      %ymm1, %ymm1, %ymm1
+	vpmuludq     %ymm9, %ymm0, %ymm6
+	vpmuludq     %ymm9, %ymm1, %ymm7
+	vpsrlq       $32, %ymm0, %ymm4
+	vpsrlq       $32, %ymm1, %ymm5
+	vpsrlq       $32, %ymm6, %ymm6
+	vpsrlq       $32, %ymm7, %ymm7
+	vpmuludq     %ymm9, %ymm4, %ymm4
+	vpmuludq     %ymm9, %ymm5, %ymm5
+	vpblendd     $0b10101010, %ymm4, %ymm6, %ymm4
+	vpblendd     $0b10101010, %ymm5, %ymm7, %ymm5
+	vpsubd       %ymm4, %ymm0, %ymm6
+	vpsubd       %ymm5, %ymm1, %ymm7
+	vpsrlvd      %ymm10, %ymm6, %ymm6
+	vpsrlvd      %ymm10, %ymm7, %ymm7
+	vpaddd       %ymm4, %ymm6, %ymm4
+	vpaddd       %ymm5, %ymm7, %ymm5
+	vpsrlvd      %ymm11, %ymm4, %ymm4
+	vpsrlvd      %ymm11, %ymm5, %ymm5
+	vpmulld      %ymm4, %ymm12, %ymm4
+	vpmulld      %ymm5, %ymm12, %ymm5
+	vpsubd       %ymm4, %ymm0, %ymm0
+	vpsubd       %ymm5, %ymm1, %ymm1
 	jmp          .pow_mod
-.end_block:
+
+.next_block:
 	vmovdqa      %ymm2, (%rbx)
 	vmovdqa      %ymm3, 32(%rbx)
 	addq         $64, %rbx
