@@ -11,9 +11,9 @@
 main:
 	push  %rbp
 	movq  %rsp, %rbp
-	subq  $16, %rsp
+	subq  $24, %rsp
 	andq  $-32, %rsp
-	subq  $48, %rsp
+	subq  $64, %rsp
 	push  %rbx
 	push  %r12
 
@@ -39,7 +39,15 @@ main:
 	cmpq  %r12, %rbx
 	jb    .load_buf
 
+	movl  $((1 << (16 + 2 - 5)) + 1), %edi
+	movl  $32, %esi
+	call  calloc
+	movq  %rax, -24(%rbp)
+	addq  $32, %rax
+	andq  $-32, %rax
+
 	movq         -8(%rbp), %rbx
+	vpxor        %ymm5, %ymm5, %ymm5
 	movl         $1, 48(%rsp)
 	movl         $1605480816, 40(%rsp)
 	movl         $1, 32(%rsp)
@@ -50,6 +58,26 @@ main:
 	vpbroadcastd 32(%rsp), %ymm10
 	vpbroadcastd 24(%rsp), %ymm11
 	vpbroadcastd 16(%rsp), %ymm12
+
+.hot_loop:
+	vmovdqa      (%rbx), %ymm0
+	vmovdqa      32(%rbx), %ymm1
+	vpcmpeqd     %ymm4, %ymm4, %ymm4
+	vpgatherdd   %ymm4, (%rax, %ymm0, 4), %ymm2
+	vpcmpeqd     %ymm4, %ymm4, %ymm4
+	vpgatherdd   %ymm4, (%rax, %ymm1, 4), %ymm3
+	vpcmpeqd     %ymm5, %ymm2, %ymm6
+	vpcmpeqd     %ymm5, %ymm3, %ymm7
+	vpor         %ymm6, %ymm7, %ymm6
+	vptest       %ymm6, %ymm5
+	jnc          .decrypt
+.next_block:
+	vmovdqa      %ymm2, (%rbx)
+	vmovdqa      %ymm3, 32(%rbx)
+	addq         $64, %rbx
+	cmpq         %r12, %rbx
+	jb           .hot_loop
+	jmp          .done
 
 .macro pow_kernel ymma, ymmb
 	vpmulld      %ymm0, \ymma, \ymma
@@ -79,8 +107,6 @@ main:
 .endm
 
 .decrypt:
-	vmovdqa      (%rbx), %ymm0
-	vmovdqa      32(%rbx), %ymm1
 	vmovdqa      %ymm8, %ymm2
 	vmovdqa      %ymm8, %ymm3
 	movl         $1631, %edx # d
@@ -90,21 +116,30 @@ main:
 	pow_kernel   %ymm2, %ymm3
 .skip_bit:
 	shrl         %edx
-	jz           .next_block
+	jz           .end_block
 	pow_kernel   %ymm0, %ymm1
 	jmp          .pow_mod
-.next_block:
-	vmovdqa      %ymm2, (%rbx)
-	vmovdqa      %ymm3, 32(%rbx)
-	addq         $64, %rbx
-	cmpq         %r12, %rbx
-	jb           .decrypt
-	jmp          .done
+
+.end_block:
+	vmovdqa      %ymm2, 16(%rsp)
+	vmovdqa      %ymm3, 48(%rsp)
+	leaq         16(%rsp), %rsi
+	movl         $60, %edx
+.map_ciphertext:
+	movl         (%rsi, %rdx), %r8d
+	movl         (%rbx, %rdx), %r9d
+	movl         %r8d, (%rax, %r9, 4)
+	subl         $4, %edx
+	jae          .map_ciphertext
+	vpxor        %ymm5, %ymm5, %ymm5
+	jmp          .next_block
 
 .done:
 	vzeroall
 
 	movq  -16(%rbp), %rdi
+	call  free
+	movq  -24(%rbp), %rdi
 	call  free
 
 	pop   %r12
