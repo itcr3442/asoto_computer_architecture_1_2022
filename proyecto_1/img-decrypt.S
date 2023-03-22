@@ -137,6 +137,23 @@ main:
 .done:
 	vzeroall
 
+	movq  -8(%rbp), %rbx
+.output:
+	movl  (%rbx), %edi
+	#test  %edi, %edi
+	#jz    .bad_decrypt
+	cmpl  $256, %edi
+	#ja    .bad_decrypt
+	jae    .bad_decrypt
+	andl  $0xff, %edi
+	call  putchar
+	addq  $4, %rbx
+	cmpq  %r12, %rbx
+	jb    .output
+
+	xorl  %eax, %eax
+.exit:
+	movl  %eax, -4(%rbp)
 	movq  -16(%rbp), %rdi
 	call  free
 	movq  -24(%rbp), %rdi
@@ -144,10 +161,19 @@ main:
 
 	pop   %r12
 	pop   %rbx
-	xorl  %eax, %eax
+	movl  -4(%rbp), %eax
 	leave
 	ret
+
+.bad_decrypt:
+	leaq  bad_decrypt_msg(%rip), %rdi
+	movq  stderr(%rip), %rsi
+	call  fputs
+	movl  $1, %eax
+	jmp   .exit
 
 .section .rodata
 scanf_format:
 	.asciz " %hhu %hhu %hhu %hhu"
+bad_decrypt_msg:
+	.asciz "Error: failed to decrypt (bad params?)\n"
