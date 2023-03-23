@@ -45,14 +45,36 @@ main:
 	movq         %rax, -24(%rbp)
 	addq         $32, %rax
 	andq         $-32, %rax
+	movq         %rax, %rbx
 
+	movl         $5963, %esi
+	movl         %esi, 16(%rsp)
+	bsrl         %esi, %ecx
+	movl         $1, %edi
+	shll         %cl, %edi
+	addl         %esi, %edi
+	subl         $1, %edi
+	bsrl         %edi, %edi
+	testb        %dil, %dil
+	setnz        %al
+	movzbl       %al, %eax
+	movl         %eax, 32(%rsp)
+	movl         %edi, %ecx
+	subl         %eax, %ecx
+	movl         %ecx, 24(%rsp)
+	movl         $1, %edx
+	movb         %dil, %cl
+	shll         %cl, %edx
+	subl         %esi, %edx
+	xorl         %eax, %eax
+	divl         %esi
+	addl         $1, %eax
+	movl         %eax, 40(%rsp)
+
+	movq         %rbx, %rax
 	movq         -8(%rbp), %rbx
 	vpxor        %ymm5, %ymm5, %ymm5
 	movl         $1, 48(%rsp)
-	movl         $1605480816, 40(%rsp)
-	movl         $1, 32(%rsp)
-	movl         $12, 24(%rsp)
-	movl         $5963, 16(%rsp)
 	vpbroadcastd 48(%rsp), %ymm8
 	vpbroadcastd 40(%rsp), %ymm9
 	vpbroadcastd 32(%rsp), %ymm10
