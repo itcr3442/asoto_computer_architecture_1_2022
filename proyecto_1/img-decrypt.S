@@ -52,7 +52,7 @@ main:
 	movl         $32, %esi
 	call         calloc
 	movq         %rax, -16(%rbp)
-	addq         $32, %rax
+	addq         $31, %rax
 	andq         $-32, %rax
 	movq         %rax, %rbx
 	movq         %rax, -8(%rbp)
@@ -74,7 +74,7 @@ main:
 	movl         $32, %esi
 	call         calloc
 	movq         %rax, -24(%rbp)
-	addq         $32, %rax
+	addq         $31, %rax
 	andq         $-32, %rax
 	movq         %rax, %rbx
 
