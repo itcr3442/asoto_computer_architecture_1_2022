@@ -11,11 +11,42 @@
 main:
 	push         %rbp
 	movq         %rsp, %rbp
-	subq         $24, %rsp
+	subq         $32, %rsp
 	andq         $-32, %rsp
 	subq         $64, %rsp
 	push         %rbx
 	push         %r12
+
+	cmpl         $3, %edi
+	jne          .usage
+	movq         16(%rsi), %r12
+	movq         8(%rsi), %rdi
+	cmpb         $0, (%rdi)
+	je           .usage
+	leaq         -8(%rbp), %rbx
+	movq         %rbx, %rsi
+	xorl         %edx, %edx
+	call         strtoul
+	movq         (%rbx), %rcx
+	cmpb         $0, (%rcx)
+	jne          .usage
+	cmpl         $256, %eax
+	jb           .usage
+	cmpl         $(1 << 16), %eax
+	jae          .usage
+	movl         %eax, -28(%rbp)
+	movq         %r12, %rdi
+	movq         %rbx, %rsi
+	xorl         %edx, %edx
+	call         strtoul
+	movq         (%rbx), %rcx
+	cmpb         $0, (%rcx)
+	jne          .usage
+	cmpl         $1, %eax
+	jbe          .usage
+	cmpl         $(1 << 16), %eax
+	jae          .usage
+	movl         %eax, -32(%rbp)
 
 	movl         $((BUFFER_SIZE >> 5) + 1), %edi
 	movl         $32, %esi
@@ -47,7 +78,7 @@ main:
 	andq         $-32, %rax
 	movq         %rax, %rbx
 
-	movl         $5963, %esi
+	movl         -28(%rbp), %esi
 	movl         %esi, 16(%rsp)
 	bsrl         %esi, %ecx
 	movl         $1, %edi
@@ -131,7 +162,7 @@ main:
 .decrypt:
 	vmovdqa      %ymm8, %ymm2
 	vmovdqa      %ymm8, %ymm3
-	movl         $1631, %edx # d
+	movl         -32(%rbp), %edx
 .pow_mod:
 	testl        $1, %edx
 	jz           .skip_bit
@@ -173,29 +204,31 @@ main:
 	cmpq         %r12, %rbx
 	jb           .output
 
-	xorl         %eax, %eax
-.exit:
-	movl         %eax, -4(%rbp)
 	movq         -16(%rbp), %rdi
 	call         free
 	movq         -24(%rbp), %rdi
 	call         free
-
 	pop          %r12
 	pop          %rbx
-	movl         -4(%rbp), %eax
+	xorl         %eax, %eax
 	leave
 	ret
 
 .bad_decrypt:
 	leaq         bad_decrypt_msg(%rip), %rdi
+	jmp          .exit_fail
+.usage:
+	leaq         usage_msg(%rip), %rdi
+.exit_fail:
 	movq         stderr(%rip), %rsi
 	call         fputs
-	movl         $1, %eax
-	jmp          .exit
+	movl         $1, %edi
+	jmp          exit
 
 .section .rodata
 scanf_format:
 	.asciz " %hhu %hhu %hhu %hhu"
 bad_decrypt_msg:
 	.asciz "Error: failed to decrypt (bad params?)\n"
+usage_msg:
+	.asciz "usage: img-decrypt <n> <d> <CIPHERTEXT >PLAINTEXT\n\tn: RSA modulus, 255 < n < 65536\n\td: RSA private exponent, 1 < d < 65536\n"
