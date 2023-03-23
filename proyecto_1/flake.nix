@@ -10,12 +10,13 @@
       devShells.${system} =
         let
           default =
-            { biber, gdb, gnumake, mkShell, texlive }:
+            { biber, gdb, gnumake, mkShell, python3, texlive }:
             mkShell {
               nativeBuildInputs = [
                 biber
                 gdb
                 gnumake
+                (python3.withPackages (py: [ py.pillow ]))
                 (texlive.combine {
                   inherit (texlive)
                     scheme-medium

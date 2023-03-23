@@ -1,4 +1,5 @@
 *.o
 *.zip
+*.out
 
 img-decrypt

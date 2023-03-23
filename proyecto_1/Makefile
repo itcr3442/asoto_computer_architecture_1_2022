@@ -6,11 +6,14 @@ TEX_TMP = $(addprefix doc/proyecto-i.,aux bbl bcf blg fls log out pdf run.xml fd
 all: img-decrypt
 
 clean:
-	rm -rf $(TEX_TMP) img-decrypt{,.o}
+	rm -rf $(TEX_TMP) img-decrypt{,.o} katherine-johnson.out
 
 doc: doc/proyecto-i.pdf
 
 dist: proyecto-i.zip
+
+test: img-decrypt katherine-johnson.txt
+	./img-decrypt 5963 1631 <katherine-johnson.txt >katherine-johnson.out && cmp -b katherine-johnson.{out,ref}
 
 img-decrypt: img-decrypt.o
 	$(CC) -o $@ $(LDFLAGS) $<
@@ -24,4 +27,4 @@ doc/proyecto-i.pdf: doc/proyecto-i.tex doc/proyecto-i.bib
 proyecto-i.zip: doc/proyecto-i.pdf
 	zip -r $@ $^
 
-.PHONY: all clean doc dist
+.PHONY: all clean doc dist test
