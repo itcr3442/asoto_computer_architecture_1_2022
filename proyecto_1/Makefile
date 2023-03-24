@@ -13,7 +13,7 @@ doc: doc/proyecto-i.pdf
 dist: proyecto-i.zip
 
 test: img-decrypt tests/*.txt tests/*.ref
-	for N in $$(seq 2); do \
+	for N in $$(seq 3); do \
 		echo "Test #$$N..." >&2; \
 		RSA_N=$$(grep 'n =' tests/$$N.params | head -1 | tr '=' ' ' | awk '{ print $$2; }'); \
 		RSA_D=$$(grep 'd =' tests/$$N.params | head -1 | tr '=' ' ' | awk '{ print $$2; }'); \
