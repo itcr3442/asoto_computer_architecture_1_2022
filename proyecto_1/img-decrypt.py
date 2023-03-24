@@ -1,36 +1,77 @@
 #!/usr/bin/env python3
 
-import subprocess, wx
+import argparse, subprocess, sys, wx
 
-input_path = 'katherine-johnson.txt'
-with open(input_path) as input_file:
-    start = input_file.tell()
-    data_cipher = bytes(int(b) for line in input_file for b in line.split())
+def main():
+    parser = argparse.ArgumentParser(
+        prog='Proyecto 1 CE4301',
+        description='Decrypt and show an image using 16-bit RSA')
 
-    input_file.seek(start)
-    result = subprocess.run(('./img-decrypt', '5963', '1631'),
-                            stdin=input_file, stdout=subprocess.PIPE, check=True)
+    parser.add_argument('input_path')
+    parser.add_argument('param_path')
+    args = parser.parse_args()
 
-    data_plain = result.stdout
+    try:
+        input_file = open(args.input_path)
+        param_file = open(args.param_path)
+    except OSError as exc:
+        print('Fatal: I/O error:', exc, file=sys.stderr)
+        return 1
 
-WIDTH, HEIGHT = 320, 320
+    params = {}
+    with param_file as param_file:
+        for i, line in enumerate(param_file):
+            try:
+                key, value = line.split('=', 1)
+                params[key.strip()] = int(value.strip())
+            except ValueError:
+                print(f'Fatal: syntax error at {repr(args.param_path)}:{i + 1}', file=sys.stderr)
+                return 1
 
-app = wx.App()
-frame = wx.Frame(None, title='Proyecto 1', size=(WIDTH * 2, HEIGHT * 2))
-frame.Show()
+    def expect(key):
+        value = params.get(key)
+        if value is None:
+            print(f'Fatal: missing param:', repr(key), file=sys.stderr)
+            sys.exit(1)
 
-def img(width, height, data):
-    data_rgb = b''.join(bytes((c, c, c)) for c in data)
-    return wx.StaticBitmap(frame, bitmap=wx.Bitmap.FromBuffer(width, height, data_rgb))
+        return value
 
-print(len(data_cipher))
-print(len(data_plain))
-img_cipher = img(WIDTH, HEIGHT * 2, data_cipher)
-img_plain = img(WIDTH, HEIGHT, data_plain)
+    n, d = expect('n'), expect('d')
+    width, height = expect('width'), expect('height')
 
-layout = wx.GridBagSizer()
-layout.Add(img_cipher, pos=(0, 0))
-layout.Add(img_plain, pos=(0, 1))
-frame.SetSizer(layout)
+    with input_file as input_file:
+        start = input_file.tell()
+        data_cipher = bytes(int(b) for line in input_file for b in line.split())
 
-app.MainLoop()
+        input_file.seek(start)
+        try:
+            result = subprocess.run(
+                    ('./img-decrypt', str(width * height), str(n), str(d)),
+                    stdin=input_file, stdout=subprocess.PIPE, check=True)
+        except subprocess.CalledProcessError as exc:
+            print('Fatal: img-decrypt failed with exit code', exc.returncode, file=sys.stderr)
+            return 1
+
+        data_plain = result.stdout
+
+    app = wx.App()
+    frame = wx.Frame(None, title='Proyecto 1', size=(width * 2, height * 2))
+    frame.Show()
+
+    def img(width, height, data):
+        data_rgb = b''.join(bytes((c, c, c)) for c in data)
+        return wx.StaticBitmap(frame, bitmap=wx.Bitmap.FromBuffer(width, height, data_rgb))
+
+    img_cipher = img(width, height * 2, data_cipher)
+    img_plain = img(width, height, data_plain)
+
+    layout = wx.GridBagSizer()
+    layout.Add(img_cipher, pos=(0, 0))
+    layout.Add(img_plain, pos=(0, 1))
+    frame.SetSizer(layout)
+
+    app.MainLoop()
+    return 0
+
+if __name__ == '__main__':
+    sys.exit(main())
