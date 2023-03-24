@@ -13,7 +13,7 @@ doc: doc/proyecto-i.pdf
 dist: proyecto-i.zip
 
 test: img-decrypt katherine-johnson.txt
-	./img-decrypt 5963 1631 <katherine-johnson.txt >katherine-johnson.out && cmp -b katherine-johnson.{out,ref}
+	./img-decrypt 102400 5963 1631 <katherine-johnson.txt >katherine-johnson.out && cmp -b katherine-johnson.{out,ref}
 
 img-decrypt: img-decrypt.o
 	$(CC) -o $@ $(LDFLAGS) $<

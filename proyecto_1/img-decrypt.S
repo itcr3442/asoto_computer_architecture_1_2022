@@ -1,10 +1,3 @@
-//TODO: 640x480
-#define PLAINTEXT_WIDTH  320
-#define PLAINTEXT_HEIGHT 320
-#define PLAINTEXT_SIZE   (PLAINTEXT_WIDTH * PLAINTEXT_HEIGHT)
-#define CIPHERTEXT_SIZE  (PLAINTEXT_SIZE * 2)
-#define BUFFER_SIZE      (PLAINTEXT_SIZE * 4)
-
 .text
 
 .global main
@@ -17,13 +10,16 @@ main:
 	push         %rbx
 	push         %r12
 
-	cmpl         $3, %edi
+	cmpl         $4, %edi
 	jne          .usage
-	movq         16(%rsi), %r12
-	movq         8(%rsi), %rdi
+	movq         24(%rsi), %r12
+	movq         8(%rsi), %rax
+	movq         %rax, -16(%rbp)
+	leaq         -8(%rbp), %rbx
+
+	movq         16(%rsi), %rdi
 	cmpb         $0, (%rdi)
 	je           .usage
-	leaq         -8(%rbp), %rbx
 	movq         %rbx, %rsi
 	xorl         %edx, %edx
 	call         strtoul
@@ -35,6 +31,7 @@ main:
 	cmpl         $(1 << 16), %eax
 	jae          .usage
 	movl         %eax, -28(%rbp)
+
 	movq         %r12, %rdi
 	movq         %rbx, %rsi
 	xorl         %edx, %edx
@@ -48,8 +45,22 @@ main:
 	jae          .usage
 	movl         %eax, -32(%rbp)
 
+	movq         -16(%rbp), %rdi
+	movq         %rbx, %rsi
+	xorl         %edx, %edx
+	call         strtoul
+	movq         (%rbx), %rcx
+	cmpb         $0, (%rcx)
+	jne          .usage
+	testl        $15, %eax
+	jnz          .bad_size
+	movl         %eax, %r12d
+	shll         $2, %r12d
+
 	xorl         %edi, %edi
-	movl         $((BUFFER_SIZE >> 5) + 1), %esi
+	shrl         $(5 - 2), %eax
+	addl         $1, %eax
+	movl         %eax, %esi
 	movl         $32, %edx
 	call         reallocarray
 	leaq         reallocarray_fn, %rdi
@@ -61,8 +72,8 @@ main:
 	movq         %rax, %rbx
 	movq         %rax, -8(%rbp)
 
-	leaq         BUFFER_SIZE(%rbx), %r12
-.load_buf:       
+	addq         %rax, %r12
+.load_buf:
 	leaq         scanf_format(%rip), %rdi
 	leaq         1(%rbx), %rsi
 	movq         %rbx, %rdx
@@ -223,6 +234,9 @@ main:
 .exit_perror:
 	call         perror
 	jmp          .exit_fail
+.bad_size:
+	leaq         bad_size_msg(%rip), %rdi
+	jmp          .exit_stderr
 .bad_load:
 	leaq         bad_load_msg(%rip), %rdi
 	jmp          .exit_stderr
@@ -241,12 +255,14 @@ main:
 .section .rodata
 scanf_format:
 	.asciz " %hhu %hhu %hhu %hhu"
+bad_size_msg:
+	.asciz "Error: plaintext length must be a multiple of 16 bytes\n"
 bad_load_msg:
 	.asciz "Error: failed to load ciphertext: premature EOF, bad format, or I/O error\n"
 bad_decrypt_msg:
 	.asciz "Error: failed to decrypt (bad params?)\n"
 usage_msg:
-	.asciz "usage: img-decrypt <n> <d> <CIPHERTEXT >PLAINTEXT\n\tn: RSA modulus, 255 < n < 65536\n\td: RSA private exponent, 1 < d < 65536\n"
+	.asciz "usage: img-decrypt <len> <n> <d> <CIPHERTEXT >PLAINTEXT\n\tlen: plaintext length\n\tn:   RSA modulus, 255 < n < 65536\n\td:   RSA private exponent, 1 < d < 65536\n"
 reallocarray_fn:
 	.asciz "reallocarray()"
 calloc_fn:
