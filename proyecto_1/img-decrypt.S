@@ -48,9 +48,13 @@ main:
 	jae          .usage
 	movl         %eax, -32(%rbp)
 
-	movl         $((BUFFER_SIZE >> 5) + 1), %edi
-	movl         $32, %esi
-	call         calloc
+	xorl         %edi, %edi
+	movl         $((BUFFER_SIZE >> 5) + 1), %esi
+	movl         $32, %edx
+	call         reallocarray
+	leaq         reallocarray_fn, %rdi
+	testq        %rax, %rax
+	jz           .exit_perror
 	movq         %rax, -16(%rbp)
 	addq         $31, %rax
 	andq         $-32, %rax
@@ -73,6 +77,9 @@ main:
 	movl         $((1 << (16 + 2 - 5)) + 1), %edi
 	movl         $32, %esi
 	call         calloc
+	leaq         calloc_fn, %rdi
+	testq        %rax, %rax
+	jz           .exit_perror
 	movq         %rax, -24(%rbp)
 	addq         $31, %rax
 	andq         $-32, %rax
@@ -214,14 +221,18 @@ main:
 	leave
 	ret
 
+.exit_perror:
+	call         perror
+	jmp          .exit_fail
 .bad_decrypt:
 	leaq         bad_decrypt_msg(%rip), %rdi
-	jmp          .exit_fail
+	jmp          .exit_stderr
 .usage:
 	leaq         usage_msg(%rip), %rdi
-.exit_fail:
+.exit_stderr:
 	movq         stderr(%rip), %rsi
 	call         fputs
+.exit_fail:
 	movl         $1, %edi
 	jmp          exit
 
@@ -232,3 +243,7 @@ bad_decrypt_msg:
 	.asciz "Error: failed to decrypt (bad params?)\n"
 usage_msg:
 	.asciz "usage: img-decrypt <n> <d> <CIPHERTEXT >PLAINTEXT\n\tn: RSA modulus, 255 < n < 65536\n\td: RSA private exponent, 1 < d < 65536\n"
+reallocarray_fn:
+	.asciz "reallocarray()"
+calloc_fn:
+	.asciz "calloc()"
