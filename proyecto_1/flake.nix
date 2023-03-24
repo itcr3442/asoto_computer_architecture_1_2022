@@ -16,7 +16,7 @@
                 biber
                 gdb
                 gnumake
-                (python3.withPackages (py: [ py.pillow ]))
+                (python3.withPackages (py: [ py.pillow py.wxPython_4_2 ]))
                 (texlive.combine {
                   inherit (texlive)
                     scheme-medium
