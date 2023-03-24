@@ -12,12 +12,12 @@ main:
 
 	cmpl         $4, %edi
 	jne          .usage
-	movq         24(%rsi), %r12
-	movq         8(%rsi), %rax
+	movq         24(%rsi), %r12 # argv[3]: d
+	movq         8(%rsi), %rax  # argv[1]: len
 	movq         %rax, -16(%rbp)
 	leaq         -8(%rbp), %rbx
 
-	movq         16(%rsi), %rdi
+	movq         16(%rsi), %rdi # argv[2]: n
 	cmpb         $0, (%rdi)
 	je           .usage
 	movq         %rbx, %rsi
@@ -61,6 +61,7 @@ main:
 	shrl         $(5 - 2), %eax
 	addl         $1, %eax
 	movl         %eax, %esi
+	# AVX2 requiere alineamiento de 32 bytes
 	movl         $32, %edx
 	call         reallocarray
 	leaq         reallocarray_fn, %rdi
@@ -87,6 +88,7 @@ main:
 	cmpq         %r12, %rbx
 	jb           .load_buf
 
+	# Utilizamos una dword por entrada para simplificar los gathers
 	movl         $((1 << (16 + 2 - 5)) + 1), %edi
 	movl         $32, %esi
 	call         calloc
@@ -98,6 +100,11 @@ main:
 	andq         $-32, %rax
 	movq         %rax, %rbx
 
+	# Gneración de parámetros utilizados para reescribir divisiones (y por
+	# $tanto residuos) a secuencias de multiplicaciones y shifts.
+	#
+	# https://gmplib.org/~tege/divcnst-pldi94.pdf
+	# Figura 4.1
 	movl         -28(%rbp), %esi
 	movl         %esi, 16(%rsp)
 	bsrl         %esi, %ecx
@@ -122,6 +129,7 @@ main:
 	addl         $1, %eax
 	movl         %eax, 40(%rsp)
 
+	# Vamos a utilizar los mismos parámetros en todos los carriles
 	movq         %rbx, %rax
 	movq         -8(%rbp), %rbx
 	vpxor        %ymm5, %ymm5, %ymm5
@@ -133,6 +141,8 @@ main:
 	vpbroadcastd 16(%rsp), %ymm12
 
 .hot_loop:
+	# Esto garantiza que el bucle de descifrado no se ejecutará más de 256
+	# veces, probablemente menos en el caso típico.
 	vmovdqa      (%rbx), %ymm0
 	vmovdqa      32(%rbx), %ymm1
 	vpcmpeqd     %ymm4, %ymm4, %ymm4
@@ -152,6 +162,7 @@ main:
 	jb           .hot_loop
 	jmp          .done
 
+# Operación (x = (x * m) % n)
 .macro pow_kernel ymma, ymmb
 	vpmulld      %ymm0, \ymma, \ymma
 	vpmulld      %ymm1, \ymmb, \ymmb
@@ -179,6 +190,7 @@ main:
 	vpsubd       %ymm5, \ymmb, \ymmb
 .endm
 
+# Exponenciación modular right-to-left
 .decrypt:
 	vmovdqa      %ymm8, %ymm2
 	vmovdqa      %ymm8, %ymm3
@@ -194,6 +206,7 @@ main:
 	jmp          .pow_mod
 
 .end_block:
+	# No podemos usar rbp aquí por garantías de alineamiento
 	vmovdqa      %ymm2, 16(%rsp)
 	vmovdqa      %ymm3, 48(%rsp)
 	leaq         16(%rsp), %rsi
@@ -208,6 +221,7 @@ main:
 	jmp          .next_block
 
 .done:
+	# Intel recomienda esto por rendimiento, no es estrictamente necesario
 	vzeroall
 
 	movq         -8(%rbp), %rbx
