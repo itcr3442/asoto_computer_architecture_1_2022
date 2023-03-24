@@ -70,6 +70,8 @@ main:
 	leaq         4(%rbx), %r8
 	xorl         %eax, %eax
 	call         scanf
+	cmpl         $4, %eax
+	jne          .bad_load
 	addq         $8, %rbx
 	cmpq         %r12, %rbx
 	jb           .load_buf
@@ -200,10 +202,7 @@ main:
 	movq         -8(%rbp), %rbx
 .output:
 	movl         (%rbx), %edi
-	#test        %edi, %edi
-	#jz          .bad_decrypt
 	cmpl         $256, %edi
-	#ja          .bad_decrypt
 	jae          .bad_decrypt
 	andl         $0xff, %edi
 	call         putchar
@@ -224,6 +223,9 @@ main:
 .exit_perror:
 	call         perror
 	jmp          .exit_fail
+.bad_load:
+	leaq         bad_load_msg(%rip), %rdi
+	jmp          .exit_stderr
 .bad_decrypt:
 	leaq         bad_decrypt_msg(%rip), %rdi
 	jmp          .exit_stderr
@@ -239,6 +241,8 @@ main:
 .section .rodata
 scanf_format:
 	.asciz " %hhu %hhu %hhu %hhu"
+bad_load_msg:
+	.asciz "Error: failed to load ciphertext: premature EOF, bad format, or I/O error\n"
 bad_decrypt_msg:
 	.asciz "Error: failed to decrypt (bad params?)\n"
 usage_msg:
