@@ -26,10 +26,10 @@ main:
 	movq         (%rbx), %rcx
 	cmpb         $0, (%rcx)
 	jne          .usage
-	cmpl         $256, %eax
+	cmpl         $(1 << 8), %eax
 	jb           .usage
 	cmpl         $(1 << 16), %eax
-	jae          .usage
+	ja           .usage
 	movl         %eax, -28(%rbp)
 
 	movq         %r12, %rdi
@@ -213,7 +213,7 @@ main:
 	movq         -8(%rbp), %rbx
 .output:
 	movl         (%rbx), %edi
-	cmpl         $256, %edi
+	cmpl         $(1 << 8), %edi
 	jae          .bad_decrypt
 	andl         $0xff, %edi
 	call         putchar
@@ -262,7 +262,7 @@ bad_load_msg:
 bad_decrypt_msg:
 	.asciz "Error: failed to decrypt (bad params?)\n"
 usage_msg:
-	.asciz "usage: img-decrypt <len> <n> <d> <CIPHERTEXT >PLAINTEXT\n\tlen: plaintext length\n\tn:   RSA modulus, 255 < n < 65536\n\td:   RSA private exponent, 1 < d < 65536\n"
+	.asciz "usage: img-decrypt <len> <n> <d> <CIPHERTEXT >PLAINTEXT\n\tlen: plaintext length\n\tn:   RSA modulus, 255 < n < 65536\n\td:   RSA private exponent, 1 < d <= 65536\n"
 reallocarray_fn:
 	.asciz "reallocarray()"
 calloc_fn:
