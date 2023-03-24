@@ -12,8 +12,17 @@ doc: doc/proyecto-i.pdf
 
 dist: proyecto-i.zip
 
-test: img-decrypt katherine-johnson.txt
-	./img-decrypt 102400 5963 1631 <katherine-johnson.txt >katherine-johnson.out && cmp -b katherine-johnson.{out,ref}
+test: img-decrypt tests/*.txt tests/*.ref
+	for N in $$(seq 2); do \
+		echo "Test #$$N..." >&2; \
+		RSA_N=$$(grep 'n =' tests/$$N.params | head -1 | tr '=' ' ' | awk '{ print $$2; }'); \
+		RSA_D=$$(grep 'd =' tests/$$N.params | head -1 | tr '=' ' ' | awk '{ print $$2; }'); \
+		WIDTH=$$(grep 'width =' tests/$$N.params | head -1 | tr '=' ' ' | awk '{ print $$2; }'); \
+		HEIGHT=$$(grep 'height =' tests/$$N.params | head -1 | tr '=' ' ' | awk '{ print $$2; }'); \
+		./img-decrypt $$(($$WIDTH * $$HEIGHT)) $$RSA_N $$RSA_D \
+			<tests/$$N.txt >tests/$$N.out \
+			&& cmp -b tests/$$N.{out,ref} \
+	; done
 
 img-decrypt: img-decrypt.o
 	$(CC) -o $@ $(LDFLAGS) $<
