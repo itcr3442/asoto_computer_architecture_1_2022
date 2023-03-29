@@ -6,7 +6,7 @@ TEX_TMP = $(addprefix doc/proyecto-i.,aux bbl bcf blg fls log out pdf run.xml fd
 all: img-decrypt
 
 clean:
-	rm -rf $(TEX_TMP) img-decrypt{,.o} katherine-johnson.out
+	rm -rf $(TEX_TMP) img-decrypt{,.o}
 
 doc: doc/proyecto-i.pdf
 
@@ -30,10 +30,10 @@ img-decrypt: img-decrypt.o
 img-decrypt.o: img-decrypt.S
 	$(CC) -c -o $@ $(ASFLAGS) $<
 
-doc/proyecto-i.pdf: doc/proyecto-i.tex doc/proyecto-i.bib
+doc/proyecto-i.pdf: doc/proyecto-i.tex doc/proyecto-i.bib doc/diag-x86.png doc/diag-rv.png
 	cd doc && latexmk -pdf proyecto-i.tex
 
-proyecto-i.zip: doc/proyecto-i.pdf
+proyecto-i.zip: Makefile doc/proyecto-i.pdf img-decrypt img-decrypt.S tests/*.txt tests/*.ref
 	zip -r $@ $^
 
 .PHONY: all clean doc dist test
