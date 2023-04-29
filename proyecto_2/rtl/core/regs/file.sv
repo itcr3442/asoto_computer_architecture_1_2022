@@ -7,7 +7,7 @@ module core_reg_file
 
 	input  psr_mode  rd_mode,
 	input  reg_num   rd_r,
-	input  reg_index wr_index,
+	                 wr_r,
 	input  logic     wr_enable,
 	                 wr_enable_file,
 	input  word      wr_value,
@@ -20,32 +20,21 @@ module core_reg_file
 	// Ver comentario en uarch.sv
 	word file[`NUM_GPREGS] /*verilator public*/;
 	word rd_actual;
-	logic rd_pc, hold_rd_pc, forward;
-	reg_index rd_index;
+	logic forward;
 
-	core_reg_map map_rd
-	(
-		.r(rd_r),
-		.mode(rd_mode),
-		.is_pc(rd_pc),
-		.index(rd_index)
-	);
-
-	assign rd_value = hold_rd_pc ? pc_word : forward ? wr_current : rd_actual;
+	assign rd_value = forward ? wr_current : rd_actual;
 
 	always_ff @(posedge clk or negedge rst_n)
 		if(!rst_n) begin
 			forward <= 0;
 			rd_actual <= 0;
-			hold_rd_pc <= 0;
 		end else begin
-			forward <= wr_enable && rd_index == wr_index;
-			hold_rd_pc <= rd_pc;
+			forward <= wr_enable && rd_r == wr_r;
 
 			if(wr_enable_file)
-				file[wr_index] <= wr_value;
+				file[wr_r] <= wr_value;
 
-			rd_actual <= file[rd_index];
+			rd_actual <= file[rd_r];
 		end
 
 endmodule

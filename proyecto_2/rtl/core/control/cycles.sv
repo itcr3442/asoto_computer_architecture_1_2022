@@ -6,7 +6,7 @@ module core_control_cycles
 	                  rst_n,
 	                  halt,
 	                  mul,
-	                  psr,
+	                  psr, //!
 	                  ldst,
 	                  bubble,
 	                  coproc,
@@ -35,46 +35,46 @@ module core_control_cycles
 	enum int unsigned
 	{
 		ISSUE,
-		RD_INDIRECT_SHIFT,
-		WITH_SHIFT,
+		//RD_INDIRECT_SHIFT, //!
+		//WITH_SHIFT,		   //!
 		TRANSFER,
-		BASE_WRITEBACK,
+		//BASE_WRITEBACK,	   //!
 		ESCALATE,
 		EXCEPTION,
-		MUL,
-		MUL_ACC_LD,
-		MUL_HI_WB,
-		PSR,
-		COPROC
+		MUL/*,*/
+		//MUL_ACC_LD,		   //!
+		//MUL_HI_WB,		   //!
+		//PSR,			   //!
+		//COPROC			   //!
 	} state, next_state;
 
 	// TODO: debe estar escrito de tal forma que Quartus infiera una FSM
 
 	assign cycle.issue = state == ISSUE;
-	assign cycle.rd_indirect_shift = state == RD_INDIRECT_SHIFT;
-	assign cycle.with_shift = state == WITH_SHIFT;
+	assign cycle.rd_indirect_shift = 0;
+    assign cycle.with_shift = 0;
 	assign cycle.transfer = state == TRANSFER;
-	assign cycle.base_writeback = state == BASE_WRITEBACK;
+	assign cycle.base_writeback = 0;
 	assign cycle.escalate = state == ESCALATE;
 	assign cycle.exception = state == EXCEPTION;
 	assign cycle.mul = state == MUL;
-	assign cycle.mul_acc_ld = state == MUL_ACC_LD;
-	assign cycle.mul_hi_wb = state == MUL_HI_WB;
-	assign cycle.psr = state == PSR;
-	assign cycle.coproc = state == COPROC;
+	assign cycle.mul_acc_ld = 0;
+	assign cycle.mul_hi_wb = 0;
+	assign cycle.psr = 0;
+	assign cycle.coproc = 0;
 
 	assign next_cycle.issue = next_state == ISSUE;
-	assign next_cycle.rd_indirect_shift = next_state == RD_INDIRECT_SHIFT;
-	assign next_cycle.with_shift = next_state == WITH_SHIFT;
+	assign next_cycle.rd_indirect_shift = 0;
+	assign next_cycle.with_shift = 0;
 	assign next_cycle.transfer = next_state == TRANSFER;
-	assign next_cycle.base_writeback = next_state == BASE_WRITEBACK;
+	assign next_cycle.base_writeback = 0;
 	assign next_cycle.escalate = next_state == ESCALATE;
 	assign next_cycle.exception = next_state == EXCEPTION;
 	assign next_cycle.mul = next_state == MUL;
-	assign next_cycle.mul_acc_ld = next_state == MUL_ACC_LD;
-	assign next_cycle.mul_hi_wb = next_state == MUL_HI_WB;
-	assign next_cycle.psr = next_state == PSR;
-	assign next_cycle.coproc = next_state == COPROC;
+	assign next_cycle.mul_acc_ld = 0;
+	assign next_cycle.mul_hi_wb = 0;
+	assign next_cycle.psr = 0;
+	assign next_cycle.coproc = 0;
 
 	always_comb begin
 		next_state = ISSUE;
@@ -86,39 +86,23 @@ module core_control_cycles
 				else if(halt)
 					next_state = ISSUE;
 				else if(mul)
-					next_state = mul_add ? MUL_ACC_LD : MUL;
-				else if(data_snd_shift_by_reg)
-					next_state = RD_INDIRECT_SHIFT;
-				else if(!trivial_shift)
-					next_state = WITH_SHIFT;
-				else if(coproc)
-					next_state = COPROC;
-
-			RD_INDIRECT_SHIFT:
-				if(!trivial_shift)
-					next_state = WITH_SHIFT;
+					next_state = MUL;
 
 			ESCALATE:
 				next_state = EXCEPTION;
 
-			TRANSFER: begin
+			TRANSFER: begin		//! hay que reescribir esto
+								//! para que ya no sea dependiente
+								//! de ARM. tenemos que redefinir:
+								//! LDST. (hola soto, gracias por
+								//! ser tan buen amigo)
 				if(!mem_ready || pop_valid)
 					next_state = TRANSFER;
-				else if(ldst_writeback)
-					next_state = BASE_WRITEBACK;
-
-				if(mem_ready && mem_fault)
-					next_state = ESCALATE;
 			end
 
 			MUL:
 				if(!mul_ready)
 					next_state = MUL;
-				else if(mul_long)
-					next_state = MUL_HI_WB;
-
-			MUL_ACC_LD:
-				next_state = MUL;
 
 			/* Este default evita problemas de sintetizado, ya que Quartus
 			 * asume que los casos mencionados son exhaustivos, provocando
@@ -133,8 +117,6 @@ module core_control_cycles
 		else if(next_state == ISSUE) begin
 			if(ldst)
 				next_state = TRANSFER;
-			else if(psr)
-				next_state = PSR;
 		end
 	end
 

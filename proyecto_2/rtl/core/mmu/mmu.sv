@@ -48,58 +48,20 @@ module core_mmu
 
 	assign fault_register = data_fault;
 
-	core_mmu_pagewalk iwalk
-	(
-		.core_addr(insn_addr),
-		.core_start(insn_start),
-		.core_write(0),
-		.core_ready(insn_ready),
-		.core_fault(insn_fault),
-		.core_data_wr(0),
-		.core_data_be(0),
-		.core_data_rd(insn_data_rd),
-		.core_fault_addr(),
-		.core_fault_page(),
-		.core_fault_type(),
-		.core_fault_domain(),
+	assign iphys_addr = insn_addr;
+	assign iphys_start = insn_start;
+	assign insn_fault = 0;
+	assign insn_ready = iphys_ready;
+	assign insn_data_rd = iphys_data_rd;
 
-		.bus_addr(iphys_addr),
-		.bus_start(iphys_start),
-		.bus_write(),
-		.bus_ready(iphys_ready),
-		.bus_data_wr(),
-		.bus_data_be(),
-		.bus_data_rd(iphys_data_rd),
-
-		.*
-	);
-
-	core_mmu_pagewalk dwalk
-	(
-		.core_addr(data_addr),
-		.core_start(data_start),
-		.core_write(data_write),
-		.core_ready(data_ready),
-		.core_fault(data_fault),
-		.core_data_wr(data_data_wr),
-		.core_data_be(data_data_be),
-		.core_data_rd(data_data_rd),
-		.core_fault_addr(fault_addr),
-		.core_fault_page(fault_page),
-		.core_fault_type(fault_type),
-		.core_fault_domain(fault_domain),
-
-		.bus_addr(dphys_addr),
-		.bus_start(dphys_start),
-		.bus_write(dphys_write),
-		.bus_ready(dphys_ready),
-		.bus_data_wr(dphys_data_wr),
-		.bus_data_be(dphys_data_be),
-		.bus_data_rd(dphys_data_rd),
-
-		.privileged(privileged && !data_user),
-		.*
-	);
+	assign dphys_addr = data_addr;
+	assign dphys_start = data_start;
+	assign dphys_write = data_write;
+	assign dphys_data_wr = data_data_wr;
+	assign dphys_data_be = data_data_be;
+	assign data_fault = 0;
+	assign data_ready = dphys_ready;
+	assign data_data_rd = dphys_data_rd;
 
 	core_mmu_arbiter arbiter
 	(

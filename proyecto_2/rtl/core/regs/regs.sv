@@ -27,11 +27,11 @@ module core_regs
 	 */
 
 	word pc_word;
-	logic wr_pc, wr_enable_file;
-	reg_index wr_index;
+	logic wr_enable_file;
 
+	assign branch = 0; // cagada
 	assign pc_word = {pc_visible, 2'b00};
-	assign wr_enable_file = wr_enable && !wr_pc;
+	assign wr_enable_file = wr_enable;
 
 	core_reg_file a
 	(
@@ -47,23 +47,10 @@ module core_regs
 		.*
 	);
 
-	core_reg_map map_wr
-	(
-		.r(wr_r),
-		.mode(wr_mode),
-		.is_pc(wr_pc),
-		.index(wr_index)
-	);
-
 	always_ff @(posedge clk or negedge rst_n)
-		if(!rst_n) begin
-			branch <= 0;
+		if(!rst_n)
 			wr_current <= 0;
-		end else begin
-			if(wr_enable)
-				wr_current <= wr_value;
-
-			branch <= wr_enable && wr_pc;
-		end
+		else if(wr_enable)
+			wr_current <= wr_value;
 
 endmodule

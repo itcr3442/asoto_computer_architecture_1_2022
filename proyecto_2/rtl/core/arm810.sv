@@ -58,11 +58,10 @@ module arm810
 	logic issue_abort;
 	insn_decode dec;
 
-	core_porch porch
-	(
-		.abort(issue_abort),
-		.*
-	);
+	assign dec = fetch_dec;
+	assign insn = fetch_insn;
+	assign insn_pc = fetch_insn_pc;
+	assign issue_abort = fetch_abort;
 
 	core_control control
 	(
@@ -89,15 +88,12 @@ module arm810
 	logic psr_write, psr_saved, update_flags, psr_wr_flags,
 	      psr_wr_control, privileged, escalating;
 
-	core_psr psr
-	(
-		.mask(intmask),
-		.write(psr_write),
-		.saved(psr_saved),
-		.wr_flags(psr_wr_flags),
-		.wr_control(psr_wr_control),
-		.*
-	);
+	assign flags = 4'b0000;
+	assign mode = `MODE_SYS;
+	assign intmask.i = 0;
+	assign cpsr_rd = 0;
+	assign spsr_rd = 0;
+	assign privileged = 1;
 
 	ptr pc_visible;
 	word rd_value_a, rd_value_b, wr_current, wr_value;
@@ -125,11 +121,7 @@ module arm810
 		.op(alu_ctrl),
 		.a(alu_a),
 		.b(alu_b),
-		.q(q_alu),
-		.c_in(flags.c),
-		.nzcv(alu_flags),
-		.v_valid(alu_v_valid),
-		.*
+		.q(q_alu)
 	);
 
 	word shifter_base, q_shifter;
