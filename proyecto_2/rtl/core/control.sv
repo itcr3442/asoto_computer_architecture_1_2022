@@ -10,7 +10,6 @@ module core_control
 	                       step,
 
 	input  insn_decode     dec,
-	input  ptr             insn_pc,
 	input  word            rd_value_a,
 	                       rd_value_b,
 	input  logic           mem_ready,
@@ -19,14 +18,9 @@ module core_control
 	input  word            mul_q_hi,
 	                       mul_q_lo,
 
-`ifdef VERILATOR
-	input  word            insn,
-`endif
-
 	output logic           halted,
 	                       stall,
 	                       branch,
-	output ptr             branch_target,
 	output alu_op          alu,
 	output word            alu_a,
 	                       alu_b,

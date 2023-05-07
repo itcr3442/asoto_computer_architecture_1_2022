@@ -21,53 +21,41 @@ module arm810
 	                  breakpoint
 );
 
-	ptr branch_target, fetch_insn_pc, fetch_head, insn_addr;
-	word fetch_insn;
-	logic explicit_branch, fetch_nop, stall,
-		  flush, prefetch_flush, insn_start;
+	ptr insn_addr;
+	hptr branch_target, hi_insn_pc, lo_insn_pc;
+	hword hi_insn, lo_insn;
+	logic explicit_branch, stall, stall_half, flush, prefetch_flush, insn_start;
 
 	//TODO
 	assign prefetch_flush = halt;
 
 	core_fetch #(.PREFETCH_ORDER(2)) fetch
 	(
-		.nop(fetch_nop),
 		.addr(insn_addr),
-		.insn(fetch_insn),
 		.fetch(insn_start),
 		.branch(explicit_branch),
 		.fetched(insn_ready),
-		.insn_pc(fetch_insn_pc),
 		.fetch_data(insn_data_rd),
-		.porch_insn_pc(insn_pc),
 		.target(branch_target),
 		.*
 	);
 
-	insn_decode fetch_dec, fetch_dec_hi, fetch_dec_lo;
-	assign fetch_dec = fetch_dec_hi; //TODO
+	insn_decode dec, dec_hi, dec_lo;
+	assign dec = dec_hi; //TODO
 
 	core_decode decode_hi
 	(
-		.dec(fetch_dec_hi),
-		.insn(fetch_insn[31:16]),
+		.dec(dec_hi),
+		.insn(hi_insn),
 		.*
 	);
 
 	core_decode decode_lo
 	(
-		.dec(fetch_dec_lo),
-		.insn(fetch_insn[15:0]),
+		.dec(dec_lo),
+		.insn(lo_insn),
 		.*
 	);
-
-	ptr insn_pc;
-	word insn;
-	insn_decode dec;
-
-	assign dec = fetch_dec;
-	assign insn = fetch_insn;
-	assign insn_pc = fetch_insn_pc;
 
 	core_control control
 	(

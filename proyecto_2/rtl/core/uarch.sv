@@ -1,8 +1,9 @@
 `ifndef CORE_UARCH_SV
 `define CORE_UARCH_SV
 
-// Decodifica como andeq r0, r0, r0
-`define NOP 32'd0
+// Decodifica como 'bal 0'
+`define NOP  16'd0
+`define DNOP {`NOP, `NOP}
 
 typedef logic[2:0]  cp_opcode;
 typedef logic[15:0] reg_list;
@@ -10,6 +11,7 @@ typedef logic[15:0] hword;
 typedef logic[31:0] word;
 typedef logic[63:0] dword;
 typedef logic[29:0] ptr;
+typedef logic[30:0] hptr;
 
 `define R0 4'b0000
 

@@ -6,29 +6,31 @@ module core_fetch
 	input  logic clk,
 	             rst_n,
 	             stall,
+	             stall_half,
 	             fetched,
 	             branch /*verilator public*/ /*verilator forceable*/,
 	             prefetch_flush,
-	input  ptr   target /*verilator public*/ /*verilator forceable*/,
-	             porch_insn_pc,
+	input  hptr  target /*verilator public*/ /*verilator forceable*/,
 	input  word  fetch_data,
 
 	output logic fetch,
 	             flush,
-	             nop,
-	output word  insn,
-	output ptr   insn_pc,
-	             addr,
-	             fetch_head
+	output hword hi_insn,
+	             lo_insn,
+	output hptr  hi_insn_pc,
+	             lo_insn_pc,
+	output ptr   addr
 );
 
-	ptr hold_addr;
-	logic prefetch_ready, fetched_valid, discard, pending, next_pending;
+	ptr hold_addr, pair_pc, fetch_ptr;
+	hptr fetch_head;
+	logic fetch_half, prefetch_ready, fetched_valid, discard, pending, next_pending;
 
 	assign fetch = prefetch_ready && !discard;
 	assign flush = branch || prefetch_flush;
 	assign next_pending = fetch || (pending && !fetched);
 	assign fetched_valid = fetched && !discard;
+	assign {fetch_ptr, fetch_half} = fetch_head;
 
 	core_prefetch #(.ORDER(PREFETCH_ORDER)) prefetch
 	(
@@ -42,12 +44,12 @@ module core_fetch
 		if(branch)
 			fetch_head = target;
 		else if(prefetch_flush)
-			fetch_head = porch_insn_pc;
+			fetch_head = {pair_pc, 1'b0};
 		else
-			fetch_head = {30{1'bx}};
+			fetch_head = {31{1'bx}};
 
 		if(flush)
-			addr = fetch_head;
+			addr = fetch_ptr;
 		else if(fetch && fetched_valid)
 			addr = hold_addr + 1;
 		else
