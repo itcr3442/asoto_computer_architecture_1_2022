@@ -7,13 +7,11 @@ module core_fetch
 	             rst_n,
 	             stall,
 	             fetched,
-	             explicit_branch /*verilator public*/ /*verilator forceable*/,
-	             wr_pc,
+	             branch /*verilator public*/ /*verilator forceable*/,
 	             prefetch_flush,
-	input  ptr   branch_target,
+	input  ptr   target /*verilator public*/ /*verilator forceable*/,
 	             porch_insn_pc,
-	input  word  wr_current,
-	             fetch_data,
+	input  word  fetch_data,
 
 	output logic fetch,
 	             flush,
@@ -24,13 +22,11 @@ module core_fetch
 	             fetch_head
 );
 
-	ptr target /*verilator public*/ /*verilator forceable*/, hold_addr;
-	logic branch, prefetch_ready, fetched_valid, discard, pending, next_pending;
+	ptr hold_addr;
+	logic prefetch_ready, fetched_valid, discard, pending, next_pending;
 
 	assign fetch = prefetch_ready && !discard;
 	assign flush = branch || prefetch_flush;
-	assign branch = explicit_branch || wr_pc;
-	assign target = wr_pc ? wr_current[31:2] : branch_target; //TODO: alignment exception
 	assign next_pending = fetch || (pending && !fetched);
 	assign fetched_valid = fetched && !discard;
 

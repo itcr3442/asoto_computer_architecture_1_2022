@@ -35,10 +35,12 @@ module arm810
 		.addr(insn_addr),
 		.insn(fetch_insn),
 		.fetch(insn_start),
+		.branch(explicit_branch),
 		.fetched(insn_ready),
 		.insn_pc(fetch_insn_pc),
 		.fetch_data(insn_data_rd),
 		.porch_insn_pc(insn_pc),
+		.target(branch_target),
 		.*
 	);
 
@@ -81,22 +83,19 @@ module arm810
 		.*
 	);
 
-	word rd_value_a, rd_value_b, wr_current, wr_value;
-	logic wr_pc, writeback;
-	reg_num rd, ra, rb;
+	word rd_value_a, rd_value_b, rd_value_c, rd_value_d,
+	     wr_value_a, wr_value_b, wr_value_c;
+
+	logic wr_enable_a, wr_enable_b, wr_enable_c;
+	reg_num rd_r_a, rd_r_b, rd_r_c, rd_r_d,
+	        wr_r_a, wr_r_b, wr_r_c;
 
 	core_regs regs
 	(
-		.rd_r_a(ra),
-		.rd_r_b(rb),
-		.wr_r(rd),
-		.wr_enable(writeback),
-		.branch(wr_pc),
 		.*
 	);
 
 	word alu_a, alu_b, q_alu;
-	logic c_logic, alu_v_valid;
 	alu_op alu_ctrl;
 
 	core_alu #(.W(32)) alu
