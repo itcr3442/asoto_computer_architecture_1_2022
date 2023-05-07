@@ -17,9 +17,7 @@ module core_mul
 
 	output word  q_hi,     // parte más significativa del resultado
 	             q_lo,     // parte menos significativa del resultado
-	output logic n,        // no hay C ni V, ya que se dejan unaffected
-	             z,
-	             ready     // 1 cuando la multiplicación está lista
+	output logic ready
 );
 
 	logic[1:0] wait_state;
@@ -27,8 +25,6 @@ module core_mul
 
 	assign ready = !start && wait_state == {$bits(wait_state){1'b0}};
 	assign {q_hi, q_lo} = q;
-	assign n = long_mul ? q_hi[$bits(q_hi) - 1] : q_lo[$bits(q_lo) - 1];
-	assign z = q_lo == 0 && (!long_mul || q_hi == 0);
 
 	//TODO: no está probado cuantos ciclos ocupa esto una vez sintetizado
 	dsp_mul it

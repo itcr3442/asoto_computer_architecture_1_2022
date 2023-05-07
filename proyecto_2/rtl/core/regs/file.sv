@@ -5,7 +5,6 @@ module core_reg_file
 	input  logic     clk,
 	                 rst_n,
 
-	input  psr_mode  rd_mode,
 	input  reg_num   rd_r,
 	                 wr_r,
 	input  logic     wr_enable,

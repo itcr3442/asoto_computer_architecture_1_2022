@@ -8,11 +8,8 @@ module core_regs
 	input  reg_num  rd_r_a,
 	                rd_r_b,
 	                wr_r,
-	input  psr_mode rd_mode,
-	                wr_mode,
 	input  logic    wr_enable,
 	input  word     wr_value,
-	input  ptr      pc_visible,
 
 	output word     rd_value_a,
 	                rd_value_b,
@@ -30,7 +27,6 @@ module core_regs
 	logic wr_enable_file;
 
 	assign branch = 0; // cagada
-	assign pc_word = {pc_visible, 2'b00};
 	assign wr_enable_file = wr_enable;
 
 	core_reg_file a

@@ -7,7 +7,6 @@ module core_prefetch
 	             rst_n,
 	             stall,
 	             flush,
-	             fault,
 	             fetched,
 	input  word  fetch_data,
 	input  ptr   head,
@@ -15,14 +14,12 @@ module core_prefetch
 	output word  insn,
 	output ptr   insn_pc,
 	output logic fetch,
-	             nop,
-	             insn_abort
+	             nop
 );
 
 	localparam SIZE = (1 << ORDER) - 1;
 
 	ptr next_pc;
-	logic faults[SIZE];
 	logic[31:0] prefetch[SIZE];
 	logic[ORDER - 1:0] valid;
 
@@ -30,28 +27,22 @@ module core_prefetch
 	assign insn = flush ? `NOP : prefetch[0];
 	assign fetch = !stall || ~&valid;
 	assign next_pc = ~stall & |valid ? insn_pc + 1 : insn_pc;
-	assign insn_abort = flush ? 0 : faults[0];
 
 	always_ff @(posedge clk or negedge rst_n)
 		if(!rst_n) begin
 			valid <= 0;
 			insn_pc <= 0;
 
-			faults[SIZE - 1] <= 0;
 			prefetch[SIZE - 1] <= `NOP;
 		end else begin
 			insn_pc <= flush ? head : next_pc;
 
-			if(flush) begin
-				faults[SIZE - 1] <= 0;
+			if(flush)
 				prefetch[SIZE - 1] <= `NOP;
-			end else if(fetched && valid == SIZE - 1 + {{(ORDER - 1){1'b0}}, !stall}) begin
-				faults[SIZE - 1] <= fault;
+			else if(fetched && valid == SIZE - 1 + {{(ORDER - 1){1'b0}}, !stall})
 				prefetch[SIZE - 1] <= fetch_data;
-			end else if(!stall) begin
-				faults[SIZE - 1] <= 0;
+			else if(!stall)
 				prefetch[SIZE - 1] <= `NOP;
-			end
 
 			if(flush)
 				valid <= 0;
@@ -65,19 +56,14 @@ module core_prefetch
 	generate
 		for(i = 0; i < SIZE - 1; ++i) begin: prefetch_slots
 			always_ff @(posedge clk or negedge rst_n)
-				if(!rst_n) begin
-					faults[i] <= 0;
+				if(!rst_n)
 					prefetch[i] <= `NOP;
-				end else if(flush) begin
-					faults[i] <= 0;
+				else if(flush)
 					prefetch[i] <= `NOP;
-			end else if(fetched & (~(|i | |valid) | (valid == i + {{(ORDER - 1){1'b0}}, ~stall}))) begin
-					faults[i] <= fault;
+				else if(fetched & (~(|i | |valid) | (valid == i + {{(ORDER - 1){1'b0}}, ~stall})))
 					prefetch[i] <= fetch_data;
-				end else if(~stall) begin
-					faults[i] <= faults[i + 1];
+				else if(~stall)
 					prefetch[i] <= prefetch[i + 1];
-				end
 		end
 	endgenerate
 

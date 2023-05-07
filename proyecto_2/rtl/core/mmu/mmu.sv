@@ -1,15 +1,9 @@
-`include "core/mmu/format.sv"
 `include "core/uarch.sv"
 
 module core_mmu
 (
 	input  logic          clk,
 	                      rst_n,
-
-	input  logic          privileged,
-	                      mmu_enable /*verilator public*/,
-	input  mmu_base       mmu_ttbr /*verilator public*/,
-	input  word           mmu_dac,
 
 	input  logic          bus_ready,
 	input  word           bus_data_rd,
@@ -19,7 +13,6 @@ module core_mmu
 	input  logic          insn_start,
 	                      data_start,
 	                      data_write,
-	                      data_user,
 	input  logic[3:0]     data_data_be,
 
 	output word           bus_data_wr,
@@ -28,17 +21,9 @@ module core_mmu
 	output logic          bus_start,
 	                      bus_write,
 	                      insn_ready,
-	                      insn_fault,
 	                      data_ready,
-	                      data_fault,
 	output word           insn_data_rd,
-	                      data_data_rd,
-
-	output logic          fault_register,
-	                      fault_page,
-	output ptr            fault_addr,
-	output mmu_fault_type fault_type,
-	output mmu_domain     fault_domain
+	                      data_data_rd
 );
 
 	ptr iphys_addr, dphys_addr;
@@ -46,11 +31,8 @@ module core_mmu
 	logic iphys_start, dphys_start, iphys_ready, dphys_ready, dphys_write;
 	logic[3:0] dphys_data_be;
 
-	assign fault_register = data_fault;
-
 	assign iphys_addr = insn_addr;
 	assign iphys_start = insn_start;
-	assign insn_fault = 0;
 	assign insn_ready = iphys_ready;
 	assign insn_data_rd = iphys_data_rd;
 
@@ -59,7 +41,6 @@ module core_mmu
 	assign dphys_write = data_write;
 	assign dphys_data_wr = data_data_wr;
 	assign dphys_data_be = data_data_be;
-	assign data_fault = 0;
 	assign data_ready = dphys_ready;
 	assign data_data_rd = dphys_data_rd;
 

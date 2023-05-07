@@ -1,4 +1,3 @@
-`include "core/mmu/format.sv"
 `include "core/uarch.sv"
 
 module arm810
@@ -24,7 +23,7 @@ module arm810
 
 	ptr branch_target, fetch_insn_pc, fetch_head, insn_addr;
 	word fetch_insn;
-	logic explicit_branch, fetch_nop, fetch_abort, stall,
+	logic explicit_branch, fetch_nop, stall,
 		  flush, prefetch_flush, insn_start;
 
 	//TODO
@@ -36,10 +35,8 @@ module arm810
 		.addr(insn_addr),
 		.insn(fetch_insn),
 		.fetch(insn_start),
-		.fault(insn_fault),
 		.fetched(insn_ready),
 		.insn_pc(fetch_insn_pc),
-		.insn_abort(fetch_abort),
 		.fetch_data(insn_data_rd),
 		.porch_insn_pc(insn_pc),
 		.*
@@ -64,51 +61,29 @@ module arm810
 
 	ptr insn_pc;
 	word insn;
-	logic issue_abort;
 	insn_decode dec;
 
 	assign dec = fetch_dec;
 	assign insn = fetch_insn;
 	assign insn_pc = fetch_insn_pc;
-	assign issue_abort = fetch_abort;
 
 	core_control control
 	(
 		.alu(alu_ctrl),
 		.branch(explicit_branch),
-		.shifter(shifter_ctrl),
 		.mem_addr(data_addr),
-		.mem_user(data_user),
 		.mem_start(data_start),
 		.mem_write(data_write),
 		.mem_ready(data_ready),
-		.mem_fault(data_fault),
 		.mem_data_rd(data_data_rd),
 		.mem_data_wr(data_data_wr),
 		.mem_data_be(data_data_be),
 		.*
 	);
 
-	word cpsr_rd, spsr_rd, psr_wr;
-	psr_mode mode;
-	psr_flags flags;
-	psr_intmask intmask;
-
-	logic psr_write, psr_saved, update_flags, psr_wr_flags,
-	      psr_wr_control, privileged, escalating;
-
-	assign flags = 4'b0000;
-	assign mode = `MODE_SYS;
-	assign intmask.i = 0;
-	assign cpsr_rd = 0;
-	assign spsr_rd = 0;
-	assign privileged = 1;
-
-	ptr pc_visible;
 	word rd_value_a, rd_value_b, wr_current, wr_value;
 	logic wr_pc, writeback;
 	reg_num rd, ra, rb;
-	psr_mode rd_mode, wr_mode;
 
 	core_regs regs
 	(
@@ -123,7 +98,6 @@ module arm810
 	word alu_a, alu_b, q_alu;
 	logic c_logic, alu_v_valid;
 	alu_op alu_ctrl;
-	psr_flags alu_flags;
 
 	core_alu #(.W(32)) alu
 	(
@@ -133,24 +107,8 @@ module arm810
 		.q(q_alu)
 	);
 
-	word shifter_base, q_shifter;
-	logic c_shifter;
-	logic[7:0] shifter_shift;
-	shifter_control shifter_ctrl;
-
-	core_shifter #(.W(32)) shifter
-	(
-		.ctrl(shifter_ctrl),
-		.base(shifter_base),
-		.shift(shifter_shift),
-		.c_in(flags.c),
-		.q(q_shifter),
-		.c(c_shifter)
-	);
-
 	logic mul_start, mul_add, mul_long, mul_signed, mul_ready;
 	word mul_a, mul_b, mul_c_hi, mul_c_lo, mul_q_hi, mul_q_lo;
-	psr_flags mul_flags;
 
 	core_mul mult
 	(
@@ -164,8 +122,6 @@ module arm810
 		.start(mul_start),
 		.q_hi(mul_q_hi),
 		.q_lo(mul_q_lo),
-		.n(mul_flags.n),
-		.z(mul_flags.z),
 		.ready(mul_ready),
 		.*
 	);
@@ -174,19 +130,11 @@ module arm810
 	word data_data_rd, data_data_wr, insn_data_rd;
 	logic[3:0] data_data_be;
 
-	logic data_start, data_write, data_ready, insn_ready,
-	      data_fault, insn_fault, data_user;
+	logic data_start, data_write, data_ready, insn_ready;
 
 	core_mmu mmu
 	(
 		.*
 	);
-
-	ptr fault_addr;
-	word coproc_read, mmu_dac;
-	logic coproc, high_vectors, mmu_enable, fault_register, fault_page;
-	mmu_base mmu_ttbr;
-	mmu_domain fault_domain;
-	mmu_fault_type fault_type;
 
 endmodule
