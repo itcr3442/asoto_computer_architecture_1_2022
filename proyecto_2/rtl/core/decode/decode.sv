@@ -3,183 +3,197 @@
 
 module core_decode
 (
-	input  word        insn,
+	input  logic       clk,
+	                   rst_n,
+	input  hword       insn,
 
 	output insn_decode dec
 );
 
-	mul_decode dec_mul;
-	psr_decode dec_psr;
-	snd_decode dec_snd;
+	alu_decode dec_alu;
+	ext_decode dec_ext;
+	sys_decode dec_sys;
 	ctrl_decode dec_ctrl;
 	data_decode dec_data;
 	ldst_decode dec_ldst;
 	branch_decode dec_branch;
-	coproc_decode dec_coproc;
 
-	assign dec.mul = dec_mul;
-	assign dec.psr = dec_psr;
-	assign dec.snd = dec_snd;
-	assign dec.ctrl = dec_ctrl;
-	assign dec.data = dec_data;
-	assign dec.ldst = dec_ldst;
-	assign dec.branch = dec_branch;
-	assign dec.coproc = dec_coproc;
+	insn_decode next_dec;
+	assign next_dec.alu = dec_alu;
+	assign next_dec.ext = dec_ext;
+	assign next_dec.sys = dec_sys;
+	assign next_dec.ctrl = dec_ctrl;
+	assign next_dec.data = dec_data;
+	assign next_dec.ldst = dec_ldst;
+	assign next_dec.branch = dec_branch;
 
-	assign dec_ctrl.nop = 0;
+	assign dec_ctrl.alu = alu;
+	assign dec_ctrl.ext = ext;
 	assign dec_ctrl.mul = mul;
-	assign dec_ctrl.swi = swi;
-	assign dec_ctrl.psr = psr;
+	assign dec_ctrl.sys = sys;
 	assign dec_ctrl.ldst = ldst;
-	assign dec_ctrl.bkpt = bkpt;
 	assign dec_ctrl.branch = branch;
-	assign dec_ctrl.coproc = coproc;
 	assign dec_ctrl.execute = execute;
-	assign dec_ctrl.writeback = writeback;
-	assign dec_ctrl.undefined = undefined;
-	assign dec_ctrl.conditional = conditional;
 
-	assign dec_psr.saved = psr_saved;
-	assign dec_psr.write = psr_write;
-	assign dec_psr.wr_flags = psr_wr_flags;
-	assign dec_psr.wr_control = psr_wr_control;
-	assign dec_psr.update_flags = update_flags;
-	assign dec_psr.restore_spsr = restore_spsr;
+	logic alu, branch, execute, ext, ldst, mul, sys;
 
-	logic execute, undefined, conditional, writeback, update_flags,
-	      restore_spsr, branch, ldst, mul, swi, psr, coproc, bkpt,
-	      psr_saved, psr_write, psr_wr_flags, psr_wr_control;
+	always_comb begin
+		alu = 0;
+		ext = 0;
+		mul = 0;
+		sys = 0;
+		ldst = 0;
+		branch = 0;
 
-	core_decode_mux mux
-	(
-		.*
-	);
+		dec_data = {($bits(dec_data)){1'bx}};
+		dec_data.uses_ra = 0;
+		dec_data.uses_rb = 0;
+		dec_data.uses_imm = 0;
+		dec_data.writeback = 0;
 
-	logic snd_is_imm, snd_ror_if_imm, snd_shift_by_reg_if_reg, snd_undefined;
-	snd_decode snd;
+		dec_branch = {($bits(dec_branch)){1'bx}};
+		dec_branch.indirect = 0;
 
-	core_decode_snd snd_operand
-	(
-		.decode(snd),
-		.is_imm(snd_is_imm),
-		.ror_if_imm(snd_ror_if_imm),
-		.shift_by_reg_if_reg(snd_shift_by_reg_if_reg),
-		.undefined(snd_undefined),
-		.*
-	);
+		dec_alu = {($bits(dec_alu)){1'bx}};
+		dec_ext = {($bits(dec_ext)){1'bx}};
+		dec_sys = {($bits(dec_sys)){1'bx}};
+		dec_ldst = {($bits(dec_ldst)){1'bx}};
 
-	logic branch_link;
+		// El orden de los casos es importante, NO CAMBIAR
+		priority casez(insn)
+			`GROUP_BAL: begin
+				dec_branch.offset = {insn `FIELD_BAL_J_HI, insn `FIELD_BAL_J_LO};
+				branch = 1;
+			end
 
-	core_decode_branch group_branch
-	(
-		.link(branch_link),
-		.offset(dec_branch.offset),
-		.*
-	);
+			`GROUP_EXT1: begin
+				dec_ext.op = {1'b0, insn `FIELD_EXT1_I};
+				ext = 1;
+				execute = 0; //TODO
+			end
 
-	data_decode data;
-	logic data_writeback, data_update_flags, data_restore_spsr,
-	      data_is_imm, data_shift_by_reg_if_reg, data_conditional;
+			`GROUP_EXT2: begin
+				dec_ext.op = {1'b1, insn `FIELD_EXT2_I};
+				ext = 1;
+				execute = 0;
+			end
 
-	core_decode_data group_data
-	(
-		.decode(data),
-		.writeback(data_writeback),
-		.conditional(data_conditional),
-		.update_flags(data_update_flags),
-		.restore_spsr(data_restore_spsr),
-		.snd_is_imm(data_is_imm),
-		.snd_shift_by_reg_if_reg(data_shift_by_reg_if_reg),
-		.*
-	);
+			`GROUP_MUL: begin
+				dec_data.ra = insn `FIELD_MUL_A;
+				dec_data.rd = insn `FIELD_MUL_Z;
+				dec_data.rb = dec_data.rd;
 
-	logic ldst_single_is_imm;
-	ldst_decode ldst_single;
+				dec_data.uses_ra = 1;
+				dec_data.uses_rb = 1;
+				dec_data.writeback = 1;
+				mul = 1;
+			end
 
-	core_decode_ldst_single group_ldst_single
-	(
-		.snd_is_imm(ldst_single_is_imm),
-		.decode(ldst_single),
-		.*
-	);
+			`GROUP_BIN: begin
+				dec_data.ra = insn `FIELD_BIN_A;
 
-	ldst_decode ldst_misc;
-	logic ldst_misc_off_is_imm;
-	reg_num ldst_misc_off_reg;
-	logic[7:0] ldst_misc_off_imm;
+				dec_data.uses_ra = 1;
+				dec_branch.indirect = 1;
+				branch = 1;
+			end
 
-	core_decode_ldst_misc group_ldst_misc
-	(
-		.decode(ldst_misc),
-		.off_imm(ldst_misc_off_imm),
-		.off_reg(ldst_misc_off_reg),
-		.off_is_imm(ldst_misc_off_is_imm),
-		.*
-	);
+			`GROUP_SYS: begin
+				dec_sys.op = insn `FIELD_SYS_I;
+				sys = 1;
+				execute = 0; //TODO
+			end
 
-	logic ldst_mult_restore_spsr;
-	ldst_decode ldst_multiple;
+			`GROUP_IMM: begin
+				dec_alu.op = `ALU_ADD;
+				dec_data.ra = `R0;
+				dec_data.rd = insn `FIELD_IMM_D;
+				dec_data.imm = insn `FIELD_IMM_I;
 
-	core_decode_ldst_multiple group_ldst_multiple
-	(
-		.decode(ldst_multiple),
-		.restore_spsr(ldst_mult_restore_spsr),
-		.*
-	);
+				dec_data.uses_imm = 1;
+				dec_data.writeback = 1;
+				alu = 1;
+			end
 
-	ldst_decode ldst_addr;
-	data_decode data_ldst;
+			`GROUP_BCC: begin
+				dec_data.ra = {insn `FIELD_BCC_P, 1'b0};
+				dec_data.rb = {insn `FIELD_BCC_P, 1'b1};
 
-	core_decode_ldst_addr ldst2data
-	(
-		.ldst(ldst_addr),
-		.alu(data_ldst)
-	);
+				dec_branch.cond = insn `FIELD_BCC_C;
+				dec_branch.offset = {{5{insn `FIELD_BCC_J_SGN}}, insn `FIELD_BCC_J};
 
-	logic mul_update_flags;
-	reg_num mul_rd, mul_rs, mul_rm;
+				dec_data.uses_ra = 1;
+				dec_data.uses_rb = 1;
+				branch = 1;
+			end
 
-	core_decode_mul group_mul
-	(
-		.decode(dec_mul),
-		.rd(mul_rd),
-		.rs(mul_rs),
-		.rm(mul_rm),
-		.update_flags(mul_update_flags),
-		.*
-	);
+			`GROUP_ADR: begin
+				dec_data.rd = insn `FIELD_ADR_D;
+				dec_branch.offset = {{2{insn `FIELD_ADR_J_SGN}}, insn `FIELD_ADR_J};
 
-	logic coproc_writeback, coproc_update_flags;
-	reg_num coproc_rd;
+				dec_data.writeback = 1;
+				branch = 1;
+			end
 
-	core_decode_coproc group_coproc
-	(
-		.rd(coproc_rd),
-		.decode(dec_coproc),
-		.writeback(coproc_writeback),
-		.update_flags(coproc_update_flags),
-		.*
-	);
+			`GROUP_ALU: begin
+				dec_alu.op = insn `FIELD_ALU_O;
+				dec_data.ra = insn `FIELD_ALU_A;
+				dec_data.rb = insn `FIELD_ALU_B;
+				dec_data.rd = insn `FIELD_ALU_D;
 
-	logic mrs_spsr;
-	reg_num mrs_rd;
+				dec_data.uses_ra = 1;
+				dec_data.uses_rb = 1;
+				dec_data.writeback = 1;
+				alu = 1;
+			end
 
-	core_decode_mrs group_mrs
-	(
-		.rd(mrs_rd),
-		.spsr(mrs_spsr),
-		.*
-	);
+			`GROUP_MEM: begin
+				dec_data.ra = insn `FIELD_MEM_A;
+				dec_data.rb = insn `FIELD_MEM_D;
+				dec_data.rd = insn `FIELD_MEM_D;
+				dec_ldst.load = insn `FIELD_MEM_L;
 
-	logic msr_spsr, msr_is_imm;
-	msr_mask msr_fields;
+				dec_data.uses_ra = 1;
+				dec_data.uses_rb = !dec_ldst.load;
+				dec_data.writeback = dec_ldst.load;
+				ldst = 1;
+			end
 
-	core_decode_msr group_msr
-	(
-		.spsr(msr_spsr),
-		.fields(msr_fields),
-		.snd_is_imm(msr_is_imm),
-		.*
-	);
+			`GROUP_INC: begin
+				dec_alu.op = {`ALU_PREFIX_ADDSUB, insn `FIELD_INC_S};
+				dec_data.ra = insn `FIELD_INC_Z;
+				dec_data.rd = dec_data.ra;
+				dec_data.imm = insn `FIELD_INC_I;
+
+				dec_data.uses_ra = 1;
+				dec_data.uses_imm = 1;
+				dec_data.writeback = 1;
+				alu = 1;
+			end
+
+			`GROUP_SHI: begin
+				dec_alu.op = {`ALU_PREFIX_SHLSHR, insn `FIELD_SHI_S};
+				dec_data.ra = insn `FIELD_SHI_A;
+				dec_data.rd = insn `FIELD_SHI_D;
+				dec_data.imm = insn `FIELD_SHI_I;
+
+				dec_data.uses_ra = 1;
+				dec_data.uses_imm = 1;
+				dec_data.writeback = 1;
+				alu = 1;
+			end
+		endcase
+
+		if(dec_data.ra == `R0)
+			dec_data.uses_ra = 0;
+
+		if(dec_data.rb == `R0)
+			dec_data.uses_rb = 0;
+
+		if(dec_data.rd == `R0)
+			dec_data.writeback = 0;
+	end
+
+	always @(posedge clk or negedge rst_n)
+		dec <= !rst_n ? {$bits(dec){1'b0}} : next_dec;
 
 endmodule

@@ -45,12 +45,21 @@ module arm810
 		.*
 	);
 
-	insn_decode fetch_dec;
+	insn_decode fetch_dec, fetch_dec_hi, fetch_dec_lo;
+	assign fetch_dec = fetch_dec_hi; //TODO
 
-	core_decode decode
+	core_decode decode_hi
 	(
-		.dec(fetch_dec),
-		.insn(fetch_insn)
+		.dec(fetch_dec_hi),
+		.insn(fetch_insn[31:16]),
+		.*
+	);
+
+	core_decode decode_lo
+	(
+		.dec(fetch_dec_lo),
+		.insn(fetch_insn[15:0]),
+		.*
 	);
 
 	ptr insn_pc;
@@ -178,16 +187,6 @@ module arm810
 	logic coproc, high_vectors, mmu_enable, fault_register, fault_page;
 	mmu_base mmu_ttbr;
 	mmu_domain fault_domain;
-	coproc_decode coproc_ctrl;
 	mmu_fault_type fault_type;
-
-	core_cp15 cp15
-	(
-		.transfer(coproc),
-		.dec(coproc_ctrl),
-		.read(coproc_read),
-		.write(rd_value_a),
-		.*
-	);
 
 endmodule
