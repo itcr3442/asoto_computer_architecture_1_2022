@@ -16,7 +16,7 @@ RTL_FILES  = $(shell find $(RTL_DIR)/ ! -path '$(RTL_DIR)/top/*' -type f -name '
 RTL_FILES += $(shell find $(TB_DIR)/ ! -path '$(TB_DIR)/top/*' -type f -name '*.sv')
 TB_FILES   = $(shell find $(TB_DIR)/ ! -path '$(TB_DIR)/top/*' -type f -name '*.cpp')
 
-all: sim
+all: exe
 
 clean:
 	rm -rf $(OBJ_DIR) $(VCD_DIR)

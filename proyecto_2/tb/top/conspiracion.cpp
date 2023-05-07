@@ -18,19 +18,7 @@
 #include "Vconspiracion_conspiracion.h"
 #include "Vconspiracion_platform.h"
 #include "Vconspiracion_vga_domain.h"
-#include "Vconspiracion_core_control.h"
-#include "Vconspiracion_core_control_issue.h"
-#include "Vconspiracion_core_cp15_domain.h"
-#include "Vconspiracion_core_cp15_far.h"
-#include "Vconspiracion_core_cp15_fsr.h"
-#include "Vconspiracion_core_cp15_syscfg.h"
-#include "Vconspiracion_core_cp15_ttbr.h"
-#include "Vconspiracion_core_cp15.h"
-#include "Vconspiracion_core_fetch.h"
-#include "Vconspiracion_core_mmu.h"
-#include "Vconspiracion_core_psr.h"
 #include "Vconspiracion_core_regs.h"
-#include "Vconspiracion_core_reg_file.h"
 
 #include "../args.hxx"
 
@@ -47,38 +35,24 @@ namespace
 {
 	volatile sig_atomic_t async_halt = 0;
 
-	constexpr const char *gp_regs[30] =
+	constexpr const char *gp_regs[] =
 	{
-		[0] = "r0",
-		[1] = "r1",
-		[2] = "r2",
-		[3] = "r3",
-		[4] = "r4",
-		[5] = "r5",
-		[6] = "r6",
-		[7] = "r7",
-		[8] = "r8_usr",
-		[9] = "r9_usr",
-		[10] = "r10_usr",
-		[11] = "r11_usr",
-		[12] = "r12_usr",
-		[13] = "r13_usr",
-		[14] = "r14_usr",
-		[15] = "r8_fiq",
-		[16] = "r9_fiq",
-		[17] = "r10_fiq",
-		[18] = "r11_fiq",
-		[19] = "r12_fiq",
-		[20] = "r13_fiq",
-		[21] = "r14_fiq",
-		[22] = "r13_irq",
-		[23] = "r14_irq",
-		[24] = "r13_und",
-		[25] = "r14_und",
-		[26] = "r13_abt",
-		[27] = "r14_abt",
-		[28] = "r13_svc",
-		[29] = "r14_svc",
+		"r0",
+		"r1",
+		"r2",
+		"r3",
+		"r4",
+		"r5",
+		"r6",
+		"r7",
+		"r8",
+		"r9",
+		"r10",
+		"r11",
+		"r12",
+		"r13",
+		"r14",
+		"r15",
 	};
 
 	struct mem_region
@@ -219,12 +193,17 @@ int main(int argc, char **argv)
 
 	args::Flag no_tty
 	(
-		parser, "no-tty", "Disable TTY takeoveer", {"no-tty"}
+		parser, "no-tty", "Disable TTY takeover", {"no-tty"}
 	);
 
 	args::Flag start_halted
 	(
 		parser, "start-halted", "Halt before running the first instruction", {"start-halted"}
+	);
+
+	args::Flag cli_trace
+	(
+		parser, "trace", "Dump trace.vcd", {"trace"}
 	);
 
 	args::ValueFlag<unsigned> cycles
@@ -291,7 +270,7 @@ int main(int argc, char **argv)
 	Vconspiracion top;
 	VerilatedVcdC trace;
 
-	bool enable_trace = std::getenv("TRACE");
+	bool enable_trace = cli_trace;
 	if(enable_trace)
 	{
 		Verilated::traceEverOn(true);
@@ -386,8 +365,7 @@ int main(int argc, char **argv)
 	auto &core = *top.conspiracion->core;
 	for(const auto &init : init_regs)
 	{
-		core.regs->a->file[init.index] = init.value;
-		core.regs->b->file[init.index] = init.value;
+		core.regs->file[init.index] = init.value;
 	}
 
 	int time = 0;
@@ -432,7 +410,6 @@ int main(int argc, char **argv)
 		ttyJ0.takeover();
 	}
 
-	top.step = 0;
 	top.halt = start_halted;
 	top.rst_n = 0;
 	cycle();
@@ -442,7 +419,7 @@ int main(int argc, char **argv)
 	{
 		std::fputs("=== dump-regs ===\n", ctrl);
 
-		const auto &regfile = core.regs->a->file;
+		const auto &regfile = core.regs->file;
 
 		int i = 0;
 		for(const auto *name : gp_regs)
@@ -450,73 +427,13 @@ int main(int argc, char **argv)
 			std::fprintf(ctrl, "%08x %s\n", regfile[i++], name);
 		}
 
-		std::fprintf(ctrl, "%08x pc\n", core.control->pc << 2);
-		std::fprintf(ctrl, "%08x cpsr\n", core.psr->cpsr_word);
-		std::fprintf(ctrl, "%08x spsr_svc\n", core.psr->spsr_svc_word);
-		std::fprintf(ctrl, "%08x spsr_abt\n", core.psr->spsr_abt_word);
-		std::fprintf(ctrl, "%08x spsr_und\n", core.psr->spsr_und_word);
-		std::fprintf(ctrl, "%08x spsr_fiq\n", core.psr->spsr_fiq_word);
-		std::fprintf(ctrl, "%08x spsr_irq\n", core.psr->spsr_irq_word);
-		std::fprintf(ctrl, "%08x sysctrl\n", core.cp15->syscfg->ctrl);
-		std::fprintf(ctrl, "%08x ttbr\n", core.cp15->ttbr->read);
-		std::fprintf(ctrl, "%08x far\n", core.cp15->far_->read);
-		std::fprintf(ctrl, "%08x fsr\n", core.cp15->fsr->read);
-		std::fprintf(ctrl, "%08x dacr\n", core.cp15->domain->mmu_dac);
-		std::fprintf(ctrl, "%08x bh0\n", core.control->ctrl_issue->bh0);
-		std::fprintf(ctrl, "%08x bh1\n", core.control->ctrl_issue->bh1);
-		std::fprintf(ctrl, "%08x bh2\n", core.control->ctrl_issue->bh2);
-		std::fprintf(ctrl, "%08x bh3\n", core.control->ctrl_issue->bh3);
 		std::fputs("=== end-regs ===\n", ctrl);
 	};
 
 	auto pagewalk = [&](std::uint32_t &addr)
 	{
-		if(!core.mmu->mmu_enable)
-		{
-			return true;
-		}
-
-		std::uint32_t ttbr = core.mmu->mmu_ttbr;
-
-		std::uint32_t entry;
-		if(!avl.dump(ttbr << 12 | addr >> 18, entry))
-		{
-			return false;
-		}
-
-		switch(entry & 0b11)
-		{
-			case 0b01:
-				break;
-
-			case 0b10:
-				addr = (entry & ~((1 << 20) - 1)) >> 2 | (addr & ((1 << 18) - 1));
-				return true;
-
-			default:
-				return false;
-		}
-
-		std::uint32_t entryaddr = (entry & ~((1 << 10) - 1)) >> 2 | ((addr >> 10) & ((1 << 8) - 1));
-		if(!avl.dump(entryaddr, entry))
-		{
-			return false;
-		}
-
-		switch(entry & 0b11)
-		{
-			case 0b01:
-				addr = (entry & ~((1 << 16) - 1)) >> 2 | (addr & ((1 << 14) - 1));
-				return true;
-
-			case 0b10:
-			case 0b11:
-				addr = (entry & ~((1 << 12) - 1)) >> 2 | (addr & ((1 << 10) - 1));
-				return true;
-
-			default:
-				return false;
-		}
+		// Ya no tenemos mmu;
+		return true;
 	};
 
 	auto do_mem_dump = [&](const mem_region *dumps, std::size_t count)
@@ -557,11 +474,9 @@ int main(int argc, char **argv)
 
 	std::signal(SIGUSR1, async_halt_handler);
 
-	core.fetch->explicit_branch__VforceVal = 1;
-
 	auto maybe_halt = [&]()
 	{
-		if(top.breakpoint || async_halt)
+		if(async_halt)
 		{
 			top.halt = 1;
 		}
@@ -573,7 +488,7 @@ int main(int argc, char **argv)
 	{
 		do
 		{
-			for(unsigned iters = 0; iters < 1024 && !top.breakpoint; ++iters)
+			for(unsigned iters = 0; iters < 1024; ++iters)
 			{
 				top.clk_clk = 0;
 				top.eval();
@@ -609,7 +524,7 @@ int main(int argc, char **argv)
 
 	while(true)
 	{
-		if(slow_path || top.halt || top.step)
+		if(slow_path || top.halt)
 		{
 			loop_accurate();
 		} else
@@ -621,116 +536,6 @@ int main(int argc, char **argv)
 		{
 			break;
 		}
-
-		top.step = 0;
-		core.fetch->target__VforceVal = core.control->pc;
-
-		do_reg_dump();
-		std::fprintf(ctrl, "=== %s ===\n", failed ? "fault" : "halted");
-
-		char *line = nullptr;
-		std::size_t buf_size = 0;
-
-		while(true)
-		{
-			ssize_t read = getline(&line, &buf_size, ctrl);
-			if(read == -1)
-			{
-				if(!std::feof(ctrl))
-				{
-					std::perror("getline()");
-					failed = true;
-				}
-
-				break;
-			}
-
-			if(read > 0 && line[read - 1] == '\n')
-			{
-				line[read - 1] = '\0';
-			}
-
-			const char *cmd = std::strtok(line, " ");
-			if(!std::strcmp(cmd, "continue"))
-			{
-				break;
-			} else if(!std::strcmp(cmd, "step"))
-			{
-				top.step = 1;
-				break;
-			} else if(!std::strcmp(cmd, "dump-mem"))
-			{
-				mem_region dump = {};
-				std::sscanf(std::strtok(nullptr, " "), "%zu", &dump.start);
-				std::sscanf(std::strtok(nullptr, " "), "%zu", &dump.length);
-				do_mem_dump(&dump, 1);
-			} else if(!std::strcmp(cmd, "patch-mem"))
-			{
-				std::uint32_t addr;
-				std::sscanf(std::strtok(nullptr, " "), "%u", &addr);
-
-				const char *data = std::strtok(nullptr, " ");
-				std::size_t length = std::strlen(data);
-
-				while(data && length >= 8)
-				{
-					std::uint32_t word;
-					std::sscanf(data, "%08x", &word);
-
-					data += 8;
-					length -= 8;
-
-					word = (word & 0xff) << 24
-						 | ((word >> 8) & 0xff) << 16
-						 | ((word >> 16) & 0xff) << 8
-						 | ((word >> 24) & 0xff);
-
-					std::uint32_t phys = addr++;
-					if(!pagewalk(phys))
-					{
-						break;
-					}
-
-					avl.patch(phys, word);
-				}
-			} else if(!std::strcmp(cmd, "patch-reg"))
-			{
-				std::uint32_t value;
-				std::sscanf(std::strtok(nullptr, " "), "%u", &value);
-
-				const char *name = std::strtok(nullptr, " ");
-				if(!std::strcmp(name, "pc"))
-				{
-					core.fetch->target__VforceVal = value >> 2;
-				} else
-				{
-					std::size_t index = 0;
-					for(const char *reg : gp_regs)
-					{
-						if(!strcmp(name, reg))
-						{
-							core.regs->a->file[index] = value;
-							core.regs->b->file[index] = value;
-							break;
-						}
-
-						++index;
-					}
-				}
-			}
-		}
-
-		std::free(line);
-		async_halt = 0;
-
-		core.fetch->target__VforceEn = 0xffff'ffff;
-		core.fetch->explicit_branch__VforceEn = 1;
-
-		cycle();
-		top.halt = 0;
-
-		core.fetch->target__VforceEn = 0;
-		core.fetch->explicit_branch__VforceEn = 0;
 	}
 
 	if(!no_tty)

@@ -3,10 +3,6 @@ module conspiracion
 	input  wire        clk_clk,
 	input  wire        rst_n,
 	input  wire        halt,
-`ifdef VERILATOR
-	input  wire        step,
-	output wire        breakpoint,
-`endif
 	output wire        cpu_halted,
 
 	output wire [12:0] memory_mem_a,
@@ -95,10 +91,6 @@ module conspiracion
 		.bus_ready(ready),
 		.bus_write(write),
 		.bus_start(start),
-`ifndef VERILATOR
-		.step(0),
-		.breakpoint(),
-`endif
 		.*
 	);
 

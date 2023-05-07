@@ -7,7 +7,6 @@ module core_control
 
 	input  logic           irq,
 	                       halt,
-	                       step,
 
 	input  insn_decode     dec,
 	input  word            rd_value_a,
