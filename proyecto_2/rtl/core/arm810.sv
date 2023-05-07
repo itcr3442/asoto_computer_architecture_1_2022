@@ -132,7 +132,7 @@ module arm810
 
 	logic data_start, data_write, data_ready, insn_ready;
 
-	core_mmu mmu
+	core_arbiter arbiter
 	(
 		.*
 	);

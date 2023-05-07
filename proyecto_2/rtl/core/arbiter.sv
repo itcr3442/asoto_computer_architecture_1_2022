@@ -1,4 +1,4 @@
-module core_mmu_arbiter
+module core_arbiter
 (
 	input  logic      clk,
 	                  rst_n,
