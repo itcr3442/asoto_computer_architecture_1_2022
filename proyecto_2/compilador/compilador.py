@@ -82,6 +82,34 @@ class Ins:
         
         return arg
 
+    def encode_reg(self, reg):
+        return self.encode_unsigned(reg, 4)
+
+    def encode_rel(self, labels, label, size):
+        addr = labels.get(label)
+
+        if addr is None:
+            self.error(f"Undefined reference to {repr(label)}")
+
+        return self.encode_signed(addr - self.addr - 1, size, tag="Jump")
+
+    def encode_signed(self, val, size, *, tag="Value"):
+        lo, hi = -(1 << (size-1)), (1 << (size-1)) - 1
+        if not (lo <= val <= hi):
+            self.error(f"{tag} out of range [{lo}, {hi}]: {val}")
+
+        elif val < 0:
+            val += 1 << size
+
+        return self.encode_unsigned(val, size)
+
+    def encode_unsigned(self, val, size):
+        hi = (1 << size) - 1
+        if not (0 <= val <= hi):
+            self.error(f"Value out of range [0, {hi}]: {val}")
+
+        return bin(val)[2:].zfill(size)
+
 class Icond_rel_j(Ins):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -89,7 +117,7 @@ class Icond_rel_j(Ins):
         self.target = self.parse_target()
     
     def encode(self, labels):
-        j = self.encode_rel(labels[self.target], 12)
+        j = self.encode_rel(labels, self.target, 12)
         return (j[:8], "0000", j[8:])
 
 class Ext_space(Ins):
@@ -158,10 +186,10 @@ class Load_imm(Ins):
 
         match self.length():
             case 1:
-                i = self.encode_reg(self.imm, 5)
+                i = self.encode_signed(self.imm, 5)
                 return (d, i, "1000000")
             case 2:
-                j = self.encode_rel(labels[self.imm_label], 10)
+                j = self.encode_rel(labels, self.imm_label, 10)
                 return [(j, "11", d), ("00000", d, "101", d)]
 
 
@@ -185,7 +213,7 @@ class Cond_j(Ins):
 
     def encode(self, labels):
         p = self.encode_unsigned(self.ra >> 1, 3)
-        j = self.encode_rel(labels[self.target], 7)
+        j = self.encode_rel(labels, self.target, 7)
         c = self.c
         return (p, j, c, "0000")
 
@@ -197,7 +225,7 @@ class Rel_addr(Ins):
         self.target = self.parse_target()
 
     def encode(self, labels):
-        j = self.encode_rel(labels[self.target], 10)
+        j = self.encode_rel(labels, self.target, 10)
         d = self.encode_reg(self.rd)
         return (j, "11", d)
 
@@ -210,19 +238,19 @@ class Alu_reg_reg(Ins):
         self.rb = self.parse_reg()
         match self.name:
             case 'and':
-                self.c = '001'
+                self.o = '001'
             case 'orr':
-                self.c = '010'
+                self.o = '010'
             case 'xor':
-                self.c = '011'
+                self.o = '011'
             case 'shl':
-                self.c = '100'
+                self.o = '100'
             case 'shr':
-                self.c = '101'
+                self.o = '101'
             case 'add':
-                self.c = '110'
+                self.o = '110'
             case 'sub':
-                self.c = '111'
+                self.o = '111'
 
     def encode(self, labels):
         a = self.encode_reg(self.ra)
@@ -264,7 +292,7 @@ class Alu_reg_inc_dec_imm5(Ins):
                 self.s = '1'
 
     def encode(self, labels):
-        i = self.encode_unsigned(self.imm, 5)
+        i = self.encode_unsigned(self.imm5, 5)
         s = self.s
         z = self.encode_reg(self.rz)
         return (i, "0000", s, "01", z)
@@ -337,11 +365,12 @@ def compile(file):
             
                 if any(c not in LABEL_CHARSET for c in label):
                     fail(lineno, f"Invalid label: {repr(label)}")
-
                 elif label in labels:
                     fail(lineno, f"Label already in use: {repr(label)}")
 
                 labels[label] = pc
+
+                continue
 
             line = line.split(maxsplit=1)
             
@@ -382,7 +411,7 @@ def compile(file):
     return output
 
 def main():
-    print(compile("test.S"))
+    sys.stdout.buffer.write(compile(sys.argv[1]))
 
 if __name__ == "__main__":
     main()
