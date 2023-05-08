@@ -4,11 +4,14 @@ import string
 LABEL_CHARSET = string.ascii_letters
 
 class Ins:
-    def __init__(self, *args, name, line):
+    def __init__(self, *args, name, line, addr):
         self.name = name
         self.line = line
-        self.addr = None
+        self.addr = addr
         self.args = iter(args)
+
+    def length(self):
+        return 1
 
     def stop(self):
         try:
@@ -286,41 +289,6 @@ class Alu_reg_imm5(Ins):
         d = self.encode_reg(self.rd)
         return (i, a, s, "01", d)
 
-def fail(line, msg):
-    print("At line ", line, ": ", msg, sep="", file=sys.stderr)
-    sys.exit(1)
-
-def compile(file):
-    insns = []
-
-    with open(file, 'r') as src:
-        for lineno, line in enumerate(src, start=1):
-            ## comments
-            if(i := line.find("!")) != -1:
-                line = line[:i]
-
-            line = line.split(maxsplit=1)
-            
-            ## empty lines
-            if not line:
-                continue
-
-            args = (arg.strip() for arg in line[1].split(",")) if len(line) > 1 else ()
-            name = line[0].lower()
-
-            ctor = ISA.get(name)
-
-            if not ctor:
-                fail(lineno, f"Unknown instruction: {repr(name)}")
-
-            insn = ctor(*args, name=name, line=lineno)
-            insn.stop()
-
-            insns.append(insn)
-            
-
-        print(insns)
-
 ISA = {
     "bal":Icond_rel_j,
     "ext":Ext_space,
@@ -346,6 +314,56 @@ ISA = {
     "inc":Alu_reg_inc_dec_imm5,
     "dec":Alu_reg_inc_dec_imm5
 }
+
+def fail(line, msg):
+    print("At line ", line, ": ", msg, sep="", file=sys.stderr)
+    sys.exit(1)
+
+def compile(file):
+    insns = []
+    pc = 0
+    labels = {}
+
+    with open(file, 'r') as src:
+        for lineno, line in enumerate(src, start=1):
+            ## comments
+            if(i := line.find("!")) != -1:
+                line = line[:i]
+
+            line = line.strip()
+
+            if len(line) > 1 and line[-1] == ":":
+                label = line[:-1]
+            
+                if any(c not in LABEL_CHARSET for c in label):
+                    fail(lineno, f"Invalid label: {repr(label)}")
+
+                elif label in labels:
+                    fail(lineno, f"Label already in use: {repr(label)}")
+
+                labels[label] = pc
+
+            line = line.split(maxsplit=1)
+            
+            ## empty lines
+            if not line:
+                continue
+
+            args = (arg.strip() for arg in line[1].split(",")) if len(line) > 1 else ()
+            name = line[0].lower()
+
+            ctor = ISA.get(name)
+
+            if not ctor:
+                fail(lineno, f"Unknown instruction: {repr(name)}")
+
+            insn = ctor(*args, name=name, line=lineno, addr=pc)
+            insn.stop()
+            pc += insn.length()
+
+            insns.append(insn)
+
+
 
 def main():
     compile("test.S")
