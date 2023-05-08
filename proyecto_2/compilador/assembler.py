@@ -347,7 +347,7 @@ def fail(line, msg):
     print("At line ", line, ": ", msg, sep="", file=sys.stderr)
     sys.exit(1)
 
-def compile(file):
+def assemble(file):
     pc = 0
     insns = []
     labels = {}
@@ -411,7 +411,7 @@ def compile(file):
     return output
 
 def main():
-    sys.stdout.buffer.write(compile(sys.argv[1]))
+    sys.stdout.buffer.write(assemble(sys.argv[1]))
 
 if __name__ == "__main__":
     main()
