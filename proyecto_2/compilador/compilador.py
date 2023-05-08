@@ -4,7 +4,7 @@ import string
 LABEL_CHARSET = string.ascii_letters
 
 class Ins:
-    def __init__(self, *args, *, name, line):
+    def __init__(self, *args, name, line):
         self.name = name
         self.line = line
         self.addr = None
@@ -25,8 +25,7 @@ class Ins:
             self.error(f"Missing arguments")
 
     def error(self, msg):
-        print("At line ", self.line, ": ", self.name, ": ", msg, sep="", file=sys.stderr)
-        sys.exit(1)
+        fail(self.line, f"{self.name}: {msg}")
         
     def parse_addr(self, *, zero=True):
         arg = self.next()
@@ -134,7 +133,7 @@ class Cont_space(Ins):
 
     def encode(self, labels):
         i = self.encode_unsigned(self.imm4, 4)
-        return ("0000" i, "11000000")
+        return ("0000", i, "11000000")
 
 class Load_imm(Ins):
     def __init__(self, *args, **kwargs):
@@ -275,9 +274,9 @@ class Alu_reg_imm5(Ins):
         self.ra = self.parse_reg(zero=False)
         self.imm5 = self.parse_imm(zero=False)
         match self.name:
-            case 'shli':
+            case 'sli':
                 self.s = '0'
-            case 'shri':
+            case 'sri':
                 self.s = '1'
         
     def encode(self, labels):
@@ -287,7 +286,42 @@ class Alu_reg_imm5(Ins):
         d = self.encode_reg(self.rd)
         return (i, a, s, "01", d)
 
-isa = {
+def fail(line, msg):
+    print("At line ", line, ": ", msg, sep="", file=sys.stderr)
+    sys.exit(1)
+
+def compile(file):
+    insns = []
+
+    with open(file, 'r') as src:
+        for lineno, line in enumerate(src, start=1):
+            ## comments
+            if(i := line.find("!")) != -1:
+                line = line[:i]
+
+            line = line.split(maxsplit=1)
+            
+            ## empty lines
+            if not line:
+                continue
+
+            args = (arg.strip() for arg in line[1].split(",")) if len(line) > 1 else ()
+            name = line[0].lower()
+
+            ctor = ISA.get(name)
+
+            if not ctor:
+                fail(lineno, f"Unknown instruction: {repr(name)}")
+
+            insn = ctor(*args, name=name, line=lineno)
+            insn.stop()
+
+            insns.append(insn)
+            
+
+        print(insns)
+
+ISA = {
     "bal":Icond_rel_j,
     "ext":Ext_space,
     "mul":Mul,
@@ -297,38 +331,24 @@ isa = {
     "beq":Cond_j,
     "bne":Cond_j,
     "blt":Cond_j,
-    "pcr":Rel_addr,
+    "adr":Rel_addr,
     "and":Alu_reg_reg,
     "orr":Alu_reg_reg,
     "xor":Alu_reg_reg,
     "ldw":Ls,
     "stw":Ls,
-    "shl":Alu_sh,
-    "shr":Alu_sh,
+    "shl":Alu_reg_reg,
+    "shr":Alu_reg_reg,
+    "sli":Alu_reg_imm5,
+    "sri":Alu_reg_imm5,
     "add":Alu_reg_reg,
     "sub":Alu_reg_reg,
     "inc":Alu_reg_inc_dec_imm5,
     "dec":Alu_reg_inc_dec_imm5
 }
 
-def write_file(self):
-        ## https://stackoverflow.com/questions/61919693/writing-bits-from-a-bit-string-to-create-a-binary-file-in-python
-        s = self.payload
-        i = 0
-        buffer = bytearray()
-        while i < len(s):
-            buffer.append(int(s[i:i+8], 2) )
-            i += 8
+def main():
+    compile("test.S")
 
-        with open("out.a", 'bw') as f:
-            f.write(buffer)
-
-def compile(self, file):
-    with open(file, 'r') as src:
-        for line in src.readlines():
-            line = line.split()
-            ins = self.ins_set.parse(line)
-            if not ins:
-                return False
-            self.payload += ins
-    self.write_file()
+if __name__ == "__main__":
+    main()
