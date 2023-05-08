@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import argparse, subprocess, sys, wx
+import argparse, subprocess, PIL.Image, sys, wx
 
 def main():
     parser = argparse.ArgumentParser(
@@ -9,6 +9,7 @@ def main():
 
     parser.add_argument('input_path')
     parser.add_argument('param_path')
+    parser.add_argument('--save')
     args = parser.parse_args()
 
     try:
@@ -53,6 +54,11 @@ def main():
             return 1
 
         data_plain = result.stdout
+
+    if args.save:
+        out_img = PIL.Image.new(size=(width, height), mode='L')
+        out_img.putdata(data_plain)
+        out_img.save(args.save)
 
     app = wx.App()
     frame = wx.Frame(None, title='Proyecto 1', size=(width * 2, height * 2))
