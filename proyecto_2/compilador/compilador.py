@@ -320,8 +320,8 @@ def fail(line, msg):
     sys.exit(1)
 
 def compile(file):
-    insns = []
     pc = 0
+    insns = []
     labels = {}
 
     with open(file, 'r') as src:
@@ -363,10 +363,26 @@ def compile(file):
 
             insns.append(insn)
 
+    output = bytearray()
 
+    for insn in insns:
+        encs = insn.encode(labels)
+        
+        if type(encs) is not list:
+            encs = [encs]
+    
+        assert len(encs) == insn.length()
+
+        for enc in encs:
+            enc = "".join(enc)
+            assert len(enc) == 16 and all(c in ("0", "1") for c in enc)
+
+            output.extend(int(enc, 2).to_bytes(2, "little"))
+
+    return output
 
 def main():
-    compile("test.S")
+    print(compile("test.S"))
 
 if __name__ == "__main__":
     main()
