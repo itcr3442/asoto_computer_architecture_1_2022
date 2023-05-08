@@ -249,7 +249,7 @@ class Ls(Ins):
         d = self.encode_reg(self.rd)
         return ("00000", a, l, "01", d)
 
-class Alu_reg_inc_dec_imm6(Ins):
+class Alu_reg_inc_dec_imm5(Ins):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         
@@ -286,3 +286,49 @@ class Alu_reg_imm5(Ins):
         s = self.s
         d = self.encode_reg(self.rd)
         return (i, a, s, "01", d)
+
+isa = {
+    "bal":Icond_rel_j,
+    "ext":Ext_space,
+    "mul":Mul,
+    "bin":Icond_ind_j,
+    "sys":Cont_space,
+    "imm":Load_imm,
+    "beq":Cond_j,
+    "bne":Cond_j,
+    "blt":Cond_j,
+    "pcr":Rel_addr,
+    "and":Alu_reg_reg,
+    "orr":Alu_reg_reg,
+    "xor":Alu_reg_reg,
+    "ldw":Ls,
+    "stw":Ls,
+    "shl":Alu_sh,
+    "shr":Alu_sh,
+    "add":Alu_reg_reg,
+    "sub":Alu_reg_reg,
+    "inc":Alu_reg_inc_dec_imm5,
+    "dec":Alu_reg_inc_dec_imm5
+}
+
+def write_file(self):
+        ## https://stackoverflow.com/questions/61919693/writing-bits-from-a-bit-string-to-create-a-binary-file-in-python
+        s = self.payload
+        i = 0
+        buffer = bytearray()
+        while i < len(s):
+            buffer.append(int(s[i:i+8], 2) )
+            i += 8
+
+        with open("out.a", 'bw') as f:
+            f.write(buffer)
+
+def compile(self, file):
+    with open(file, 'r') as src:
+        for line in src.readlines():
+            line = line.split()
+            ins = self.ins_set.parse(line)
+            if not ins:
+                return False
+            self.payload += ins
+    self.write_file()
