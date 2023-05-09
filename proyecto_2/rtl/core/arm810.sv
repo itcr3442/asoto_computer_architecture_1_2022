@@ -55,9 +55,19 @@ module arm810
 		.*
 	);
 
+	word single_rd_value_a, single_rd_value_b;
+	logic start_alu_a, start_alu_b, start_mul, start_ldst, start_branch;
+	insn_decode dec_alu_a, dec_alu_b, dec_single;
+
+	core_dispatch dispatch
+	(
+		.dec_a(dec_lo),
+		.dec_b(dec_hi),
+		.*
+	);
+
 	core_control control
 	(
-		.alu(alu_ctrl),
 		.branch(explicit_branch),
 		.mem_addr(data_addr),
 		.mem_start(data_start),
@@ -81,18 +91,25 @@ module arm810
 		.*
 	);
 
-	word alu_a, alu_b, q_alu;
-	alu_op alu_ctrl;
-
-	core_alu #(.W(32)) alu
+	core_alu #(.W(32)) alu_a
 	(
-		.op(alu_ctrl),
-		.a(alu_a),
-		.b(alu_b),
-		.q(q_alu)
+		.a(rd_value_a),
+		.b(rd_value_b),
+		.dec(dec_alu_a),
+		.start(start_alu_a),
+		.*
 	);
 
-	logic mul_start, mul_add, mul_long, mul_signed, mul_ready;
+	core_alu #(.W(32)) alu_b
+	(
+		.a(rd_value_c),
+		.b(rd_value_d),
+		.dec(dec_alu_b),
+		.start(start_alu_b),
+		.*
+	);
+
+	logic mul_add, mul_long, mul_signed, mul_ready;
 	word mul_a, mul_b, mul_c_hi, mul_c_lo, mul_q_hi, mul_q_lo;
 
 	core_mul mult
@@ -104,7 +121,7 @@ module arm810
 		.long_mul(mul_long),
 		.add(mul_add),
 		.sig(mul_signed),
-		.start(mul_start),
+		.start(start_mul),
 		.q_hi(mul_q_hi),
 		.q_lo(mul_q_lo),
 		.ready(mul_ready),

@@ -20,9 +20,6 @@ module core_control
 	output logic           halted,
 	                       stall,
 	                       branch,
-	output alu_op          alu,
-	output word            alu_a,
-	                       alu_b,
 	output ptr             mem_addr,
 	output word            mem_data_wr,
 	output logic[3:0]      mem_data_be,
@@ -34,7 +31,6 @@ module core_control
 	                       mul_c_lo,
 	output logic           mul_add,
 	                       mul_long,
-	                       mul_start,
 	                       mul_signed
 );
 

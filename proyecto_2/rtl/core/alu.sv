@@ -1,18 +1,21 @@
 `include "core/uarch.sv"
-`include "core/decode/isa.sv"
 
 module core_alu
 #(parameter W=16)
 (
-	input  alu_op         op,
-	input  logic[W - 1:0] a,
-	                      b,
+	input  logic          clk,
+	                      rst_n,
 
-	output logic[W - 1:0] q
+	input  insn_decode    dec,
+	input  logic          start,
+	input  logic[W - 1:0] a,
+	                      b
 );
 
+	logic[W - 1:0] q; //TODO
+
 	always_comb
-		unique case(op)
+		unique case(dec.alu.op)
 			`ALU_AND:
 				q = a & b;
 
