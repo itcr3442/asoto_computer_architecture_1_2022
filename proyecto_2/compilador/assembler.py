@@ -12,6 +12,9 @@ class Ins:
         self.addr = addr
         self.args = iter(args)
 
+    def imm_pool(self, pool):
+        pass
+
     def length(self):
         return 1
 
@@ -44,12 +47,13 @@ class Ins:
         arg = self.next()
         try:
             imm = int(arg, 0)
-
         except ValueError:
             self.error(f"Invalid immediate value: {repr(arg)}")
 
         if not zero and not imm:
             self.error("Immediate value must not be 0.")
+        elif not (-(1 << 31) <= imm <= (1 << 32) - 1):
+            self.error(f"Immediate exceeds 32 bits: {imm}")
 
         return imm
 
@@ -387,6 +391,20 @@ def assemble(file):
     pc = 0
     insns = []
     labels = {}
+    imm_labels = {}
+
+    def get_imm_label(imm):
+        nonlocal imm_labels
+
+        if imm < 0:
+            imm += 1 << 32
+
+        label = imm_labels.get(imm)
+        if not label:
+            label = f'#{hex(imm)[2:].zfill(8)}'
+            imm_labels[imm] = label
+
+        return label
 
     with open(file, "r") as src:
         for lineno, line in enumerate(src, start=1):
@@ -424,9 +442,15 @@ def assemble(file):
 
             insn = ctor(*args, name=name, line=lineno, addr=pc)
             insn.stop()
-            pc += insn.length()
+            insn.imm_pool(get_imm_label)
 
             insns.append(insn)
+            pc += insn.length()
+
+    imm_labels = list(imm_labels.items())
+    for imm, label in imm_labels:
+        labels[label] = pc
+        pc += 2
 
     output = bytearray()
 
@@ -443,6 +467,9 @@ def assemble(file):
             assert len(enc) == 16 and all(c in ("0", "1") for c in enc)
 
             output.extend(int(enc, 2).to_bytes(2, "little"))
+
+    for imm, _label in imm_labels:
+        output.extend(imm.to_bytes(4, 'little'))
 
     return output
 

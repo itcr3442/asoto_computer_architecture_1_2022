@@ -5,7 +5,7 @@ mul r4, r7
 bin r15
 soto:
 sys 1
-imm r6, 5
+imm r6, 0x12345678
 beq r6, r7, julian
 blk julian
 bne r6, r7, julian
