@@ -1,6 +1,7 @@
 import sys
 import string
 
+REG_LINK      = 15
 LABEL_CHARSET = string.ascii_letters
 
 
@@ -86,13 +87,13 @@ class Ins:
     def encode_reg(self, reg):
         return self.encode_unsigned(reg, 4)
 
-    def encode_rel(self, labels, label, size):
+    def encode_rel(self, labels, label, size, *, offset=1):
         addr = labels.get(label)
 
         if addr is None:
             self.error(f"Undefined reference to {repr(label)}")
 
-        return self.encode_signed(addr - self.addr - 1, size, tag="Jump")
+        return self.encode_signed(addr - self.addr - offset, size, tag="Jump")
 
     def encode_signed(self, val, size, *, tag="Value"):
         lo, hi = -(1 << (size - 1)), (1 << (size - 1)) - 1
@@ -155,7 +156,11 @@ class Icond_ind_j(Ins):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.ra = self.parse_reg()
+        match self.name:
+            case 'bin':
+                self.ra = self.parse_reg()
+            case 'ret':
+                self.ra = REG_LINK
 
     def encode(self, labels):
         a = self.encode_reg(self.ra)
@@ -236,6 +241,20 @@ class Rel_addr(Ins):
         j = self.encode_rel(labels, self.target, 10)
         d = self.encode_reg(self.rd)
         return (j, "11", d)
+
+
+class Rel_call(Ins):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.target = self.parse_target()
+
+    def length(self):
+        return 2
+
+    def encode(self, labels):
+        j = self.encode_rel(labels, self.target, 12, offset=2)
+        return [("0000000001111111",), (j[:8], "0000", j[8:])]
 
 
 class Alu_reg_reg(Ins):
@@ -335,12 +354,14 @@ ISA = {
     "ext": Ext_space,
     "mul": Mul,
     "bin": Icond_ind_j,
+    "ret": Icond_ind_j,
     "sys": Cont_space,
     "imm": Load_imm,
     "beq": Cond_j,
     "bne": Cond_j,
     "blt": Cond_j,
     "adr": Rel_addr,
+    "blk": Rel_call,
     "and": Alu_reg_reg,
     "orr": Alu_reg_reg,
     "xor": Alu_reg_reg,

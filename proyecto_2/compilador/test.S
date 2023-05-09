@@ -7,6 +7,7 @@ soto:
 sys 1
 imm r6, 5
 beq r6, r7, julian
+blk julian
 bne r6, r7, julian
 blt r6, r7, julian
 adr r5, soto
@@ -14,6 +15,7 @@ and r7, r6, r0
 julian:
 orr r7, r6, r0
 xor r7, r6, r0
+ret
 ldw r5, [r6]
 stw [r5], r6
 shl r10, r11, r14
