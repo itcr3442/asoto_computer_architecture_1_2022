@@ -1,3 +1,5 @@
+`include "core/uarch.sv"
+
 module core_arbiter
 (
 	input  logic      clk,

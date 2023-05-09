@@ -96,6 +96,13 @@ typedef struct packed
 	sys_decode    sys;
 } insn_decode;
 
+typedef struct packed
+{
+	word    value;
+	logic   ready;
+	reg_num rd;
+} wb_line;
+
 // Ver comentario en cycles.sv, este diseño es más óptimo
 typedef struct packed
 {

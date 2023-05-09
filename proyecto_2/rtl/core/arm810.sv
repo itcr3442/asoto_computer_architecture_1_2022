@@ -91,19 +91,25 @@ module arm810
 		.*
 	);
 
+	wb_line wb_alu_a;
+
 	core_alu #(.W(32)) alu_a
 	(
 		.a(rd_value_a),
 		.b(rd_value_b),
+		.wb(wb_alu_a),
 		.dec(dec_alu_a),
 		.start(start_alu_a),
 		.*
 	);
 
+	wb_line wb_alu_b;
+
 	core_alu #(.W(32)) alu_b
 	(
 		.a(rd_value_c),
 		.b(rd_value_d),
+		.wb(wb_alu_b),
 		.dec(dec_alu_b),
 		.start(start_alu_b),
 		.*
