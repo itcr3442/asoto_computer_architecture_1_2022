@@ -6,7 +6,6 @@ module core_fetch
 	input  logic clk,
 	             rst_n,
 	             stall,
-	             stall_half,
 	             fetched,
 	             branch /*verilator public*/ /*verilator forceable*/,
 	             prefetch_flush,

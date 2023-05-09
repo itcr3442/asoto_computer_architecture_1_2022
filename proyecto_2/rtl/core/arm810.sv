@@ -22,7 +22,7 @@ module arm810
 	ptr insn_addr;
 	hptr branch_target, hi_insn_pc, lo_insn_pc;
 	hword hi_insn, lo_insn;
-	logic explicit_branch, stall, stall_half, flush, prefetch_flush, insn_start;
+	logic explicit_branch, stall, flush, prefetch_flush, insn_start;
 
 	//TODO
 	assign prefetch_flush = halt;
