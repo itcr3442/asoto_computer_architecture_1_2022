@@ -49,6 +49,7 @@ module core_decode
 		sys = 0;
 		ldst = 0;
 		branch = 0;
+		execute = 0;
 
 		dec_data = {($bits(dec_data)){1'bx}};
 		dec_data.uses_ra = 0;
@@ -196,6 +197,9 @@ module core_decode
 
 		if(dec_data.rd == `R0)
 			dec_data.writeback = 0;
+
+		if(insn == `NOP)
+			execute = 0;
 	end
 
 	always @(posedge clk or negedge rst_n)
