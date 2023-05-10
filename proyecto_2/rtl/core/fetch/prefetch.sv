@@ -32,8 +32,8 @@ module core_prefetch
 	assign {head_ptr, head_half} = head;
 
 	always_comb begin
-		hi_insn_pc = {pair_pc, 1'b1};
-		lo_insn_pc = {pair_pc, 1'b0};
+		hi_insn_pc = {pair_pc + 30'd1, 1'b0};
+		lo_insn_pc = {pair_pc, 1'b1};
 		{hi_insn, lo_insn} = prefetch[0];
 
 		if(flush)
