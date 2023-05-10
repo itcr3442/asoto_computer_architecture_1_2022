@@ -79,12 +79,9 @@ module arm810
 		.*
 	);
 
-	word rd_value_a, rd_value_b, rd_value_c, rd_value_d,
-	     wr_value_a, wr_value_b, wr_value_c;
-
-	logic wr_enable_a, wr_enable_b, wr_enable_c;
-	reg_num rd_r_a, rd_r_b, rd_r_c, rd_r_d,
-	        wr_r_a, wr_r_b, wr_r_c;
+	word rd_value_a, rd_value_b, rd_value_c, rd_value_d;
+	wb_line wr_a, wr_b;
+	reg_num rd_r_a, rd_r_b, rd_r_c, rd_r_d;
 
 	core_regs regs
 	(
@@ -135,6 +132,11 @@ module arm810
 		.q_hi(mul_q_hi),
 		.q_lo(mul_q_lo),
 		.ready(mul_ready),
+		.*
+	);
+
+	core_writeback wb
+	(
 		.*
 	);
 
