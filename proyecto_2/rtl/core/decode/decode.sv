@@ -5,7 +5,10 @@ module core_decode
 (
 	input  logic       clk,
 	                   rst_n,
+
 	input  hword       insn,
+	input  logic       stall,
+	                   flush,
 
 	output insn_decode dec
 );
@@ -194,6 +197,12 @@ module core_decode
 	end
 
 	always @(posedge clk or negedge rst_n)
-		dec <= !rst_n ? {$bits(dec){1'b0}} : next_dec;
+		if(!rst_n)
+			dec <= {$bits(dec){1'b0}};
+		else if(flush)
+			// Equivalente de `NOP
+			dec <= {$bits(dec){1'b0}};
+		else if(!stall)
+			dec <= next_dec;
 
 endmodule
