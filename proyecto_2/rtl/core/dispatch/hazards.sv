@@ -10,6 +10,7 @@ module core_dispatch_hazards
 	                   mask_b_rb,
 	                   mask_alu_a,
 	                   mask_alu_b,
+	input  logic       branch_stall,
 
 	output logic       dispatch_a,
 	                   dispatch_b
@@ -22,7 +23,7 @@ module core_dispatch_hazards
 	assign mask_b = mask_b_ra | mask_b_rb;
 	assign mask_wr = mask_alu_a | mask_alu_b; //TODO: más EUs
 
-	assign dispatch_a = cur_a.ctrl.execute && !|(mask_a & mask_wr);
+	assign dispatch_a = !branch_stall && cur_a.ctrl.execute && !|(mask_a & mask_wr);
 	assign dispatch_b = dispatch_a && a_permits_b && cur_b.ctrl.execute && !|(mask_b & mask_wr);
 
 	always_comb begin

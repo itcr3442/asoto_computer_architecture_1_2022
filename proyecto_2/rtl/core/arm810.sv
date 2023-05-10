@@ -22,9 +22,8 @@ module arm810
 	ptr insn_addr;
 	hptr branch_target, hi_insn_pc, lo_insn_pc;
 	hword hi_insn, lo_insn;
-	logic explicit_branch, stall, flush, prefetch_flush, insn_start;
+	logic explicit_branch, flush, prefetch_flush, insn_start;
 
-	//TODO
 	assign prefetch_flush = halt;
 
 	core_fetch #(.PREFETCH_ORDER(2)) fetch
@@ -56,7 +55,7 @@ module arm810
 	);
 
 	word single_rd_value_a, single_rd_value_b;
-	logic start_alu_a, start_alu_b, start_mul, start_ldst, start_branch;
+	logic stall, start_alu_a, start_alu_b, start_mul, start_ldst, start_branch;
 	insn_decode dec_alu_a, dec_alu_b, dec_single;
 
 	core_dispatch dispatch
@@ -115,6 +114,8 @@ module arm810
 		.raw_mask(mask_alu_b),
 		.*
 	);
+
+	logic branch_stall;
 
 	logic mul_add, mul_long, mul_signed, mul_ready;
 	word mul_a, mul_b, mul_c_hi, mul_c_lo, mul_q_hi, mul_q_lo;

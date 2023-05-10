@@ -13,6 +13,7 @@ module core_dispatch
 	                    rd_value_d,
 	input  hword        mask_alu_a,
 	                    mask_alu_b,
+	input  logic        branch_stall,
 
 	output logic        stall,
 	                    start_alu_a,
