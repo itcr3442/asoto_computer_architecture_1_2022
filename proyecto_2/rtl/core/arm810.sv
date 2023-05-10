@@ -64,18 +64,6 @@ module arm810
 		.*
 	);
 
-	core_control control
-	(
-		.mem_addr(data_addr),
-		.mem_start(data_start),
-		.mem_write(data_write),
-		.mem_ready(data_ready),
-		.mem_data_rd(data_data_rd),
-		.mem_data_wr(data_data_wr),
-		.mem_data_be(data_data_be),
-		.*
-	);
-
 	word rd_value_a, rd_value_b, rd_value_c, rd_value_d;
 	wb_line wr_a, wr_b;
 	reg_num rd_r_a, rd_r_b, rd_r_c, rd_r_d;
