@@ -87,6 +87,7 @@ typedef struct packed
 //TODO: Esto debería ser una union
 typedef struct packed
 {
+	hptr          pc;
 	ctrl_decode   ctrl;
 	data_decode   data;
 	alu_decode    alu;

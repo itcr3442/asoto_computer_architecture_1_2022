@@ -44,6 +44,7 @@ module arm810
 	(
 		.dec(dec_hi),
 		.insn(hi_insn),
+		.insn_pc(hi_insn_pc),
 		.*
 	);
 
@@ -51,6 +52,7 @@ module arm810
 	(
 		.dec(dec_lo),
 		.insn(lo_insn),
+		.insn_pc(lo_insn_pc),
 		.*
 	);
 

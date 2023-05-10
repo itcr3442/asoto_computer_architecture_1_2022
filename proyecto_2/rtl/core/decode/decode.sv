@@ -7,6 +7,7 @@ module core_decode
 	                   rst_n,
 
 	input  hword       insn,
+	input  hptr        insn_pc,
 	input  logic       stall,
 	                   flush,
 
@@ -22,6 +23,7 @@ module core_decode
 	branch_decode dec_branch;
 
 	insn_decode next_dec;
+	assign next_dec.pc = insn_pc;
 	assign next_dec.alu = dec_alu;
 	assign next_dec.ext = dec_ext;
 	assign next_dec.sys = dec_sys;
