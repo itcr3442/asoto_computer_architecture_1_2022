@@ -35,6 +35,11 @@ module core_dispatch
 	                    single_rd_value_b
 );
 
+`ifdef VERILATOR
+	word pc /*verilator public*/;
+	assign pc = {dec_a.pc > dec_b.pc ? dec_a.pc : dec_b.pc, 1'b0};
+`endif
+
 	//TODO: dispatch_a, dispatch_b, b_wants_a
 
 	logic holding, dispatch_a, dispatch_b, last_dispatch_b;

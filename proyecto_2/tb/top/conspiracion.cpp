@@ -18,6 +18,7 @@
 #include "Vconspiracion_conspiracion.h"
 #include "Vconspiracion_platform.h"
 #include "Vconspiracion_vga_domain.h"
+#include "Vconspiracion_core_dispatch.h"
 #include "Vconspiracion_core_regs.h"
 
 #include "../args.hxx"
@@ -420,6 +421,8 @@ int main(int argc, char **argv)
 		std::fputs("=== dump-regs ===\n", ctrl);
 
 		const auto &regfile = core.regs->file;
+
+		std::fprintf(ctrl, "%08x pc\n", core.dispatch->pc);
 
 		int i = 0;
 		for(const auto *name : gp_regs)
