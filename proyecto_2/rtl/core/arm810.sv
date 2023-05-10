@@ -20,20 +20,17 @@ module arm810
 );
 
 	ptr insn_addr;
-	hptr branch_target, hi_insn_pc, lo_insn_pc;
+	hptr hi_insn_pc, lo_insn_pc;
 	hword hi_insn, lo_insn;
-	logic explicit_branch, flush, prefetch_flush, insn_start;
-
-	assign prefetch_flush = halt;
+	logic flush, insn_start;
 
 	core_fetch #(.PREFETCH_ORDER(2)) fetch
 	(
 		.addr(insn_addr),
 		.fetch(insn_start),
-		.branch(explicit_branch),
 		.fetched(insn_ready),
 		.fetch_data(insn_data_rd),
-		.target(branch_target),
+		.prefetch_flush(halt),
 		.*
 	);
 
@@ -69,7 +66,6 @@ module arm810
 
 	core_control control
 	(
-		.branch(explicit_branch),
 		.mem_addr(data_addr),
 		.mem_start(data_start),
 		.mem_write(data_write),
@@ -92,7 +88,7 @@ module arm810
 	hword mask_alu_a;
 	wb_line wb_alu_a;
 
-	core_alu #(.W(32)) alu_a
+	core_alu #(.W(32)) ex_alu_a
 	(
 		.a(rd_value_a),
 		.b(rd_value_b),
@@ -106,7 +102,7 @@ module arm810
 	hword mask_alu_b;
 	wb_line wb_alu_b;
 
-	core_alu #(.W(32)) alu_b
+	core_alu #(.W(32)) ex_alu_b
 	(
 		.a(rd_value_c),
 		.b(rd_value_d),
@@ -117,7 +113,23 @@ module arm810
 		.*
 	);
 
-	logic branch_stall;
+	hptr target;
+	hword mask_branch;
+	logic branch, branch_stall;
+	wb_line wb_branch;
+
+	core_branch ex_branch
+	(
+		.a(single_rd_value_a),
+		.b(single_rd_value_b),
+		.wb(wb_branch),
+		.dec(dec_single),
+		.stall(branch_stall),
+		.start(start_branch),
+		.raw_mask(mask_branch),
+		.wb_stall(wb_stall_branch),
+		.*
+	);
 
 	logic mul_add, mul_long, mul_signed, mul_ready;
 	word mul_a, mul_b, mul_c_hi, mul_c_lo, mul_q_hi, mul_q_lo;
@@ -137,6 +149,8 @@ module arm810
 		.ready(mul_ready),
 		.*
 	);
+
+	logic wb_stall_branch;
 
 	core_writeback wb
 	(

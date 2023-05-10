@@ -13,7 +13,10 @@ module core_dispatch
 	                    rd_value_d,
 	input  hword        mask_alu_a,
 	                    mask_alu_b,
-	input  logic        branch_stall,
+	                    mask_branch,
+	input  logic        flush,
+	                    branch_stall,
+	                    wb_stall_branch,
 
 	output logic        stall,
 	                    start_alu_a,
@@ -111,6 +114,9 @@ module core_dispatch
 		end else begin
 			if(dispatch_a && !dispatch_b)
 				holding <= !holding;
+
+			if(flush)
+				holding <= 0;
 
 			start_alu_a <= dispatch_a && cur_a.ctrl.alu;
 			start_alu_b <= dispatch_b && cur_b.ctrl.alu;

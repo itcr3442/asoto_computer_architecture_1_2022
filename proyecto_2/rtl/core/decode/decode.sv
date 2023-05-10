@@ -58,6 +58,7 @@ module core_decode
 		dec_data.writeback = 0;
 
 		dec_branch = {($bits(dec_branch)){1'bx}};
+		dec_branch.cond = `COND_ALWAYS;
 		dec_branch.indirect = 0;
 
 		dec_alu = {($bits(dec_alu)){1'bx}};

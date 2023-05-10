@@ -10,7 +10,9 @@ module core_dispatch_hazards
 	                   mask_b_rb,
 	                   mask_alu_a,
 	                   mask_alu_b,
+	                   mask_branch,
 	input  logic       branch_stall,
+	                   wb_stall_branch,
 
 	output logic       dispatch_a,
 	                   dispatch_b
@@ -21,10 +23,7 @@ module core_dispatch_hazards
 
 	assign mask_a = mask_a_ra | mask_a_rb;
 	assign mask_b = mask_b_ra | mask_b_rb;
-	assign mask_wr = mask_alu_a | mask_alu_b; //TODO: más EUs
-
-	assign dispatch_a = !branch_stall && cur_a.ctrl.execute && !|(mask_a & mask_wr);
-	assign dispatch_b = dispatch_a && a_permits_b && cur_b.ctrl.execute && !|(mask_b & mask_wr);
+	assign mask_wr = mask_alu_a | mask_alu_b | mask_branch; //TODO: más EUs
 
 	always_comb begin
 		a_permits_b = 1;
@@ -41,6 +40,14 @@ module core_dispatch_hazards
 
 		if(!cur_a.ctrl.execute || !cur_b.ctrl.execute)
 			a_permits_b = 1;
+
+		dispatch_a = !branch_stall && cur_a.ctrl.execute && !|(mask_a & mask_wr);
+		if(dispatch_a && cur_a.ctrl.branch)
+			dispatch_a = !wb_stall_branch;
+
+		dispatch_b = dispatch_a && a_permits_b && cur_b.ctrl.execute && !|(mask_b & mask_wr);
+		if(dispatch_b && cur_a.ctrl.branch)
+			dispatch_b = !wb_stall_branch;
 	end
 
 endmodule
