@@ -41,13 +41,19 @@ module core_dispatch_hazards
 		if(!cur_a.ctrl.execute || !cur_b.ctrl.execute)
 			a_permits_b = 1;
 
-		dispatch_a = !branch_stall && cur_a.ctrl.execute && !|(mask_a & mask_wr);
+		dispatch_a = !branch_stall && !|(mask_a & mask_wr);
 		if(dispatch_a && cur_a.ctrl.branch)
 			dispatch_a = !wb_stall_branch;
 
-		dispatch_b = dispatch_a && a_permits_b && cur_b.ctrl.execute && !|(mask_b & mask_wr);
+		if(!cur_a.ctrl.execute)
+			dispatch_a = 1;
+
+		dispatch_b = dispatch_a && a_permits_b && !|(mask_b & mask_wr);
 		if(dispatch_b && cur_a.ctrl.branch)
 			dispatch_b = !wb_stall_branch;
+
+		if(dispatch_a && !cur_b.ctrl.execute)
+			dispatch_b = 1;
 	end
 
 endmodule

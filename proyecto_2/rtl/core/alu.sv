@@ -61,7 +61,7 @@ module core_alu
 		end else begin
 			wb.rd <= dec.data.rd;
 			wb.value <= q;
-			wb.ready <= 0;
+			wb.ready <= start;
 		end
 
 endmodule

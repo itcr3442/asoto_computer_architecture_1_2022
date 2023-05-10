@@ -121,9 +121,14 @@ module core_dispatch
 			start_alu_a <= dispatch_a && cur_a.ctrl.alu;
 			start_alu_b <= dispatch_b && cur_b.ctrl.alu;
 
-			start_mul <= (dispatch_a && cur_a.ctrl.mul) || (dispatch_b && cur_b.ctrl.mul);
-			start_ldst <= (dispatch_a && cur_a.ctrl.ldst) || (dispatch_b && cur_b.ctrl.ldst);
-			start_branch <= (dispatch_a && cur_a.ctrl.branch) || (dispatch_b && cur_b.ctrl.branch);
+			start_mul <= (dispatch_a && cur_a.ctrl.execute && cur_a.ctrl.mul)
+			          || (dispatch_b && cur_b.ctrl.execute && cur_b.ctrl.mul);
+
+			start_ldst <= (dispatch_a && cur_a.ctrl.execute && cur_a.ctrl.ldst)
+			           || (dispatch_b && cur_b.ctrl.execute && cur_b.ctrl.ldst);
+
+			start_branch <= (dispatch_a && cur_a.ctrl.execute && cur_a.ctrl.branch)
+			             || (dispatch_b && cur_b.ctrl.execute && cur_b.ctrl.branch);
 		end
 
 	// No necesitan reset
@@ -133,7 +138,7 @@ module core_dispatch
 
 		dec_alu_a <= cur_a;
 		dec_alu_b <= cur_b;
-		dec_single <= dispatch_b ? cur_b : cur_a;
+		dec_single <= (dispatch_b && cur_b.ctrl.execute) ? cur_b : cur_a;
 		last_dispatch_b <= dispatch_b;
 	end
 

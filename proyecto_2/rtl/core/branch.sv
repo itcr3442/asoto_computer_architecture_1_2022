@@ -18,12 +18,20 @@ module core_branch
 	                      branch
 );
 
+	logic next_stall;
+
+	hptr pc, offst; logic indir;
+	assign pc = dec.pc;
+	assign indir = dec.branch.indirect;
+	assign offst = {{(31 - 12){dec.branch.offset[11]}}, dec.branch.offset};
+
 	hword raw_in, raw_hold;
 	logic hold_start, taken;
 	insn_decode hold_dec;
 
-	assign stall = (start && !dec.data.writeback) || branch;
+	assign stall = next_stall || branch;
 	assign raw_mask = raw_in | raw_hold;
+	assign next_stall = start && !dec.data.writeback;
 
 	core_raw_mask in_mask
 	(
@@ -75,7 +83,7 @@ module core_branch
 				hold_start <= start;
 			end
 
-			branch <= stall && taken;
+			branch <= next_stall && taken;
 
 			if(dec.branch.indirect)
 				target <= a[31:1];

@@ -49,7 +49,7 @@ module core_decode
 		sys = 0;
 		ldst = 0;
 		branch = 0;
-		execute = 0;
+		execute = 1;
 
 		dec_data = {($bits(dec_data)){1'bx}};
 		dec_data.uses_ra = 0;
