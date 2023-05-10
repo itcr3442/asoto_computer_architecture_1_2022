@@ -11,6 +11,8 @@ module core_dispatch
 	                    rd_value_b,
 	                    rd_value_c,
 	                    rd_value_d,
+	input  hword        mask_alu_a,
+	                    mask_alu_b,
 
 	output logic        stall,
 	                    start_alu_a,
@@ -29,12 +31,12 @@ module core_dispatch
 	                    single_rd_value_b
 );
 
-	//TODO: keep_a, keep_b, dispatch_a, dispatch_b, b_wants_a
+	//TODO: dispatch_a, dispatch_b, b_wants_a
 
-	logic holding, keep_a, keep_b, dispatch_a, dispatch_b, last_dispatch_b, b_wants_a;
+	logic holding, dispatch_a, dispatch_b, last_dispatch_b;
 	insn_decode hold, cur_a, cur_b;
 
-	assign stall = keep_a || (holding && keep_b);
+	assign stall = !dispatch_a || (holding && !dispatch_b);
 
 	assign rd_r_a = cur_a.data.ra;
 	assign rd_r_b = cur_a.data.rb;
@@ -43,9 +45,39 @@ module core_dispatch
 
 	core_dispatch_hazards hazards
 	(
-		.dec_a(cur_a),
-		.dec_b(cur_b),
 		.*
+	);
+
+	hword mask_a_ra, mask_a_rb;
+
+	core_raw_mask raw_a_ra
+	(
+		.r(cur_a.data.ra),
+		.enable(cur_a.data.uses_ra),
+		.raw_mask(mask_a_ra)
+	);
+
+	core_raw_mask raw_a_rb
+	(
+		.r(cur_a.data.rb),
+		.enable(cur_a.data.uses_rb),
+		.raw_mask(mask_a_rb)
+	);
+
+	hword mask_b_ra, mask_b_rb;
+
+	core_raw_mask raw_b_ra
+	(
+		.r(cur_b.data.ra),
+		.enable(cur_b.data.uses_ra),
+		.raw_mask(mask_b_ra)
+	);
+
+	core_raw_mask raw_b_rb
+	(
+		.r(cur_b.data.rb),
+		.enable(cur_b.data.uses_rb),
+		.raw_mask(mask_b_rb)
 	);
 
 	always_comb begin
@@ -76,7 +108,7 @@ module core_dispatch
 			start_alu_a <= 0;
 			start_alu_b <= 0;
 		end else begin
-			if(!keep_a && keep_b)
+			if(dispatch_a && !dispatch_b)
 				holding <= !holding;
 
 			start_alu_a <= dispatch_a && cur_a.ctrl.alu;
@@ -89,7 +121,7 @@ module core_dispatch
 
 	// No necesitan reset
 	always @(posedge clk) begin
-		if(!keep_a)
+		if(dispatch_a)
 			hold <= dec_b;
 
 		dec_alu_a <= cur_a;

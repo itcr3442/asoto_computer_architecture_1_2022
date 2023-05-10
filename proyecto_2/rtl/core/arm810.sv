@@ -91,6 +91,7 @@ module arm810
 		.*
 	);
 
+	hword mask_alu_a;
 	wb_line wb_alu_a;
 
 	core_alu #(.W(32)) alu_a
@@ -100,9 +101,11 @@ module arm810
 		.wb(wb_alu_a),
 		.dec(dec_alu_a),
 		.start(start_alu_a),
+		.raw_mask(mask_alu_a),
 		.*
 	);
 
+	hword mask_alu_b;
 	wb_line wb_alu_b;
 
 	core_alu #(.W(32)) alu_b
@@ -112,6 +115,7 @@ module arm810
 		.wb(wb_alu_b),
 		.dec(dec_alu_b),
 		.start(start_alu_b),
+		.raw_mask(mask_alu_b),
 		.*
 	);
 

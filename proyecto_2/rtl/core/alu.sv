@@ -11,12 +11,20 @@ module core_alu
 	input  logic[W - 1:0] a,
 	                      b,
 
-	output wb_line        wb
+	output wb_line        wb,
+	output hword          raw_mask
 );
 
 	logic[W - 1:0] b_or_imm, q;
 
 	assign b_or_imm = dec.data.uses_imm ? {{(W - $bits(dec.data.imm)){1'b0}}, dec.data.imm} : b;
+
+	core_raw_mask rd_mask
+	(
+		.r(dec.data.rd),
+		.enable(start),
+		.*
+	);
 
 	always_comb
 		unique case(dec.alu.op)
