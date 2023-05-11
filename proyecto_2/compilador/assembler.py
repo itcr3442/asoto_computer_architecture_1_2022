@@ -82,6 +82,8 @@ class Ins:
 
     def parse_target(self):
         arg = self.next()
+        if arg == '.':
+            return self.addr
 
         if not arg or any(c not in LABEL_CHARSET for c in arg):
             self.error(f"Invalid label: {repr(arg)}")
@@ -92,7 +94,7 @@ class Ins:
         return self.encode_unsigned(reg, 4)
 
     def encode_rel(self, labels, label, size, *, offset=1):
-        addr = labels.get(label)
+        addr = labels.get(label) if type(label) is str else label
 
         if addr is None:
             self.error(f"Undefined reference to {repr(label)}")
