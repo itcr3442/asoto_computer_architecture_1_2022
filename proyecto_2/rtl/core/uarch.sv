@@ -76,11 +76,6 @@ typedef struct packed
 
 typedef struct packed
 {
-	logic load;
-} ldst_decode;
-
-typedef struct packed
-{
 	logic[3:0] op;
 } sys_decode;
 
@@ -93,7 +88,6 @@ typedef struct packed
 	alu_decode    alu;
 	branch_decode branch;
 	ext_decode    ext;
-	ldst_decode   ldst;
 	sys_decode    sys;
 } insn_decode;
 

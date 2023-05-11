@@ -119,6 +119,22 @@ module arm810
 		.*
 	);
 
+	logic ldst_wait;
+	hword mask_ldst;
+	wb_line wb_ldst;
+
+	core_ldst ex_ldst
+	(
+		.a(single_rd_value_a),
+		.b(single_rd_value_b),
+		.wb(wb_ldst),
+		.dec(dec_single),
+		.start(start_ldst),
+		.raw_mask(mask_ldst),
+		.wb_stall(wb_stall_branch),
+		.*
+	);
+
 	logic mul_add, mul_long, mul_signed, mul_ready;
 	word mul_a, mul_b, mul_c_hi, mul_c_lo, mul_q_hi, mul_q_lo;
 
@@ -138,7 +154,7 @@ module arm810
 		.*
 	);
 
-	logic wb_stall_branch;
+	logic wb_stall_branch, wb_stall_ldst;
 
 	core_writeback wb
 	(

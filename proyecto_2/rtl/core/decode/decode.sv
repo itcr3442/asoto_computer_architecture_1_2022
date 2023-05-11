@@ -19,7 +19,6 @@ module core_decode
 	sys_decode dec_sys;
 	ctrl_decode dec_ctrl;
 	data_decode dec_data;
-	ldst_decode dec_ldst;
 	branch_decode dec_branch;
 
 	insn_decode next_dec;
@@ -29,7 +28,6 @@ module core_decode
 	assign next_dec.sys = dec_sys;
 	assign next_dec.ctrl = dec_ctrl;
 	assign next_dec.data = dec_data;
-	assign next_dec.ldst = dec_ldst;
 	assign next_dec.branch = dec_branch;
 
 	assign dec_ctrl.alu = alu;
@@ -40,7 +38,7 @@ module core_decode
 	assign dec_ctrl.branch = branch;
 	assign dec_ctrl.execute = execute;
 
-	logic alu, branch, execute, ext, ldst, mul, sys;
+	logic alu, branch, execute, ext, ldst, mul, sys, load;
 
 	always_comb begin
 		alu = 0;
@@ -64,7 +62,6 @@ module core_decode
 		dec_alu = {($bits(dec_alu)){1'bx}};
 		dec_ext = {($bits(dec_ext)){1'bx}};
 		dec_sys = {($bits(dec_sys)){1'bx}};
-		dec_ldst = {($bits(dec_ldst)){1'bx}};
 
 		// El orden de los casos es importante, NO CAMBIAR
 		priority casez(insn)
@@ -156,12 +153,11 @@ module core_decode
 			`GROUP_MEM: begin
 				dec_data.ra = insn `FIELD_MEM_A;
 				dec_data.rb = insn `FIELD_MEM_D;
-				dec_data.rd = insn `FIELD_MEM_D;
-				dec_ldst.load = insn `FIELD_MEM_L;
+				dec_data.rd = dec_data.rb;
+				dec_data.writeback = insn `FIELD_MEM_L;
 
 				dec_data.uses_ra = 1;
-				dec_data.uses_rb = !dec_ldst.load;
-				dec_data.writeback = dec_ldst.load;
+				dec_data.uses_rb = !dec_data.writeback;
 				ldst = 1;
 			end
 

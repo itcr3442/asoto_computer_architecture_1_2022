@@ -12,6 +12,7 @@ module core_dispatch_hazards
 	                   mask_alu_b,
 	                   mask_branch,
 	input  logic       branch_stall,
+	                   ldst_wait,
 	                   wb_stall_branch,
 
 	output logic       dispatch_a,
@@ -42,15 +43,26 @@ module core_dispatch_hazards
 			a_permits_b = 1;
 
 		dispatch_a = !branch_stall && !|(mask_a & mask_wr);
-		if(dispatch_a && cur_a.ctrl.branch)
-			dispatch_a = !wb_stall_branch;
+
+		if(dispatch_a) begin
+			if(cur_a.ctrl.branch)
+				dispatch_a = !wb_stall_branch;
+
+			if(cur_a.ctrl.ldst)
+				dispatch_a = !ldst_wait;
+		end
 
 		if(!cur_a.ctrl.execute)
 			dispatch_a = 1;
 
 		dispatch_b = dispatch_a && a_permits_b && !|(mask_b & mask_wr);
-		if(dispatch_b && cur_a.ctrl.branch)
-			dispatch_b = !wb_stall_branch;
+		if(dispatch_b) begin
+			if(cur_b.ctrl.branch)
+				dispatch_b = !wb_stall_branch;
+
+			if(cur_b.ctrl.ldst)
+				dispatch_b = !ldst_wait;
+		end
 
 		if(dispatch_a && !cur_b.ctrl.execute)
 			dispatch_b = 1;

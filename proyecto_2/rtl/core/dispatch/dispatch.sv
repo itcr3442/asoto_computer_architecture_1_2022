@@ -16,6 +16,7 @@ module core_dispatch
 	                    mask_branch,
 	input  logic        flush,
 	                    branch_stall,
+	                    ldst_wait,
 	                    wb_stall_branch,
 
 	output logic        stall,

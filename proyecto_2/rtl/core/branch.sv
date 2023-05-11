@@ -76,11 +76,11 @@ module core_branch
 			target <= 0;
 		end else begin
 			if(!wb_stall) begin
-				wb.rd <= dec.data.rd;
-				wb.value <= {target, 1'b0};
-				wb.ready <= hold_start && hold_dec.data.writeback;
-
 				hold_start <= start;
+
+				wb.rd <= hold_dec.data.rd;
+				wb.ready <= hold_start && hold_dec.data.writeback;
+				wb.value <= {target, 1'b0};
 			end
 
 			branch <= next_stall && taken;
