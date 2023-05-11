@@ -43,7 +43,7 @@ module core_dispatch
 
 	//TODO: dispatch_a, dispatch_b, b_wants_a
 
-	logic holding, dispatch_a, dispatch_b, last_dispatch_b;
+	logic holding, dispatch_a, dispatch_b, last_b_single;
 	insn_decode hold, cur_a, cur_b;
 
 	assign stall = !dispatch_a || (holding && !dispatch_b);
@@ -100,7 +100,7 @@ module core_dispatch
 		end
 
 		// Esto opera en el siguiente ciclo respecto al dispatch que lo generó
-		if(last_dispatch_b) begin
+		if(last_b_single) begin
 			single_rd_value_a = rd_value_c;
 			single_rd_value_b = rd_value_d;
 		end else begin
@@ -145,7 +145,8 @@ module core_dispatch
 		dec_alu_a <= cur_a;
 		dec_alu_b <= cur_b;
 		dec_single <= (dispatch_b && cur_b.ctrl.execute) ? cur_b : cur_a;
-		last_dispatch_b <= dispatch_b;
+		last_b_single <= dispatch_b && cur_b.ctrl.execute
+		              && (cur_b.ctrl.ldst || cur_b.ctrl.mul || cur_b.ctrl.branch);
 	end
 
 endmodule
