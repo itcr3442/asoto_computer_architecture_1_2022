@@ -42,7 +42,8 @@ module core_dispatch_hazards
 		if(!cur_a.ctrl.execute || !cur_b.ctrl.execute)
 			a_permits_b = 1;
 
-		dispatch_a = !|(mask_a & mask_wr);
+		// Quartus necesita estos paréntesis redundantes
+		dispatch_a = !(|(mask_a & mask_wr));
 
 		if(dispatch_a) begin
 			if(cur_a.ctrl.branch)
@@ -58,7 +59,7 @@ module core_dispatch_hazards
 		if(branch_stall)
 			dispatch_a = 0;
 
-		dispatch_b = dispatch_a && a_permits_b && !|(mask_b & mask_wr);
+		dispatch_b = dispatch_a && a_permits_b && !(|(mask_b & mask_wr));
 
 		if(dispatch_b) begin
 			if(cur_b.ctrl.branch)
