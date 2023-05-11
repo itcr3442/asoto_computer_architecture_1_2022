@@ -68,7 +68,7 @@ module core_regs
 		rd_hold_d <= file[rd_r_d];
 
 		wr_hold_a <= wr_a.value;
-		wr_hold_b <= wr_a.value;
+		wr_hold_b <= wr_b.value;
 		wr_hold_r_a <= wr_a.ready ? wr_a.rd : `R0;
 		wr_hold_r_b <= wr_b.ready ? wr_b.rd : `R0;
 	end
