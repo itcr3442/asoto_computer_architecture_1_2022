@@ -41,8 +41,6 @@ module core_dispatch
 	assign pc = {dec_a.pc > dec_b.pc ? dec_a.pc : dec_b.pc, 1'b0};
 `endif
 
-	//TODO: dispatch_a, dispatch_b, b_wants_a
-
 	logic holding, dispatch_a, dispatch_b, last_b_single;
 	insn_decode hold, cur_a, cur_b;
 
@@ -52,6 +50,9 @@ module core_dispatch
 	assign rd_r_b = cur_a.data.rb;
 	assign rd_r_c = cur_b.data.ra;
 	assign rd_r_d = cur_b.data.rb;
+
+	// dec_alu_x es el cur_x del ciclo pasado
+	assign dec_single = last_b_single ? dec_alu_b : dec_alu_a;
 
 	core_dispatch_hazards hazards
 	(
@@ -144,9 +145,10 @@ module core_dispatch
 
 		dec_alu_a <= cur_a;
 		dec_alu_b <= cur_b;
-		dec_single <= (dispatch_b && cur_b.ctrl.execute) ? cur_b : cur_a;
+
 		last_b_single <= dispatch_b && cur_b.ctrl.execute
-		              && (cur_b.ctrl.ldst || cur_b.ctrl.mul || cur_b.ctrl.branch);
+	                  && (cur_b.ctrl.ldst || cur_b.ctrl.mul || cur_b.ctrl.branch);
+
 	end
 
 endmodule

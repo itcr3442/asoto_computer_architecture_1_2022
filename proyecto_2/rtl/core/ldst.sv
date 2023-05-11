@@ -62,15 +62,17 @@ module core_ldst
 			hold_wb <= 0;
 		end else begin
 			data_start <= start;
-			if(start)
+			if(start) begin
 				data_wait <= 1;
+				hold_wb <= load;
+			end
 
-			if(data_wait && data_ready)
+			if(data_wait && data_ready) begin
 				data_wait <= 0;
+				hold_wb <= 0;
+			end
 
 			if(!wb_stall) begin
-				hold_wb <= start && load;
-
 				wb.rd <= hold_rd;
 				wb.value <= data_data_rd;
 				wb.ready <= hold_wb && data_wait && data_ready;
