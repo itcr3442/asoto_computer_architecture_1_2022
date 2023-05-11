@@ -447,6 +447,11 @@ def assemble(file):
             insns.append(insn)
             pc += insn.length()
 
+    # Inmediatos tienen que estar alineados a words
+    imm_pool_padding = bool(pc & 1)
+    if imm_pool_padding:
+        pc += 1
+
     imm_labels = list(imm_labels.items())
     for imm, label in imm_labels:
         labels[label] = pc
@@ -467,6 +472,9 @@ def assemble(file):
             assert len(enc) == 16 and all(c in ("0", "1") for c in enc)
 
             output.extend(int(enc, 2).to_bytes(2, "little"))
+
+    if imm_pool_padding:
+        output.extend(b'\x00\x00')
 
     for imm, _label in imm_labels:
         output.extend(imm.to_bytes(4, 'little'))
