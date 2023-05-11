@@ -20,11 +20,6 @@ module core_branch
 
 	logic next_stall;
 
-	hptr pc, offst; logic indir;
-	assign pc = dec.pc;
-	assign indir = dec.branch.indirect;
-	assign offst = {{(31 - 12){dec.branch.offset[11]}}, dec.branch.offset};
-
 	hword raw_in, raw_hold;
 	logic hold_start, taken;
 	insn_decode hold_dec;

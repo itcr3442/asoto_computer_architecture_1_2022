@@ -19,6 +19,10 @@ module core_dispatch_hazards
 	                   dispatch_b
 );
 
+	logic cur_ex_a, cur_ex_b;
+	assign cur_ex_a = cur_a.ctrl.execute;
+	assign cur_ex_b = cur_b.ctrl.execute;
+
 	hword mask_a, mask_b, mask_wr;
 	logic a_permits_b;
 
@@ -42,7 +46,7 @@ module core_dispatch_hazards
 		if(!cur_a.ctrl.execute || !cur_b.ctrl.execute)
 			a_permits_b = 1;
 
-		dispatch_a = !branch_stall && !|(mask_a & mask_wr);
+		dispatch_a = !|(mask_a & mask_wr);
 
 		if(dispatch_a) begin
 			if(cur_a.ctrl.branch)
@@ -55,7 +59,11 @@ module core_dispatch_hazards
 		if(!cur_a.ctrl.execute)
 			dispatch_a = 1;
 
+		if(branch_stall)
+			dispatch_a = 0;
+
 		dispatch_b = dispatch_a && a_permits_b && !|(mask_b & mask_wr);
+
 		if(dispatch_b) begin
 			if(cur_b.ctrl.branch)
 				dispatch_b = !wb_stall_branch;
