@@ -14,6 +14,7 @@ module core_dispatch
 	input  hword        mask_alu_a,
 	                    mask_alu_b,
 	                    mask_branch,
+	                    mask_ldst,
 	input  logic        flush,
 	                    branch_stall,
 	                    ldst_wait,

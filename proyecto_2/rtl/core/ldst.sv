@@ -30,7 +30,7 @@ module core_ldst
 	assign addr = load ? a : b;
 	assign load = dec.data.writeback;
 	assign raw_mask = raw_in | raw_hold;
-	assign ldst_wait = data_wait || wb_stall;
+	assign ldst_wait = start || data_wait || wb_stall;
 	assign data_data_be = 4'b1111; // Solo soportamos ldw/stw
 
 	hword raw_in;
