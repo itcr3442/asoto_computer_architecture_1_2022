@@ -56,15 +56,16 @@ nextcolumn:
 
     imm r1, 0x110
     ldw r2, [r1]                  ! r2 = y
-    blk sin                       ! r2 = sin(2*pi*y/L)
-    imm r1, 
-    and r2, r2, r1                ! Aplicar máscara
+    imm r1, 0x100
+    ldw r4, [r1]                  ! r4 = Lx
+    blk sin                       ! r2 = sin(2*pi*y/Lx)
     imm r1, 0x108
     ldw r3, [r1]                  ! r3 = Ax
     mul r2, r3                    ! r2 = Ax*sin(2*pi*y/Lx)
     imm r1, 0x114
     ldw r3, [r1]                  ! r3 = x
-    add r2, r2, r3                ! r2 = x +  Ax*sin(2*pi*y/Lx)
+    add r2, r2, r3                ! r2 = x + Ax*sin(2*pi*y/Lx)
+    blk round                     ! r2 = round(r2)
     imm r4, 300                   ! r4 = 300
     blk division                  ! r10 = mod(r2, r4) 
     add r11, r0, r10              ! r11 = r10 (Nuevo valor de x)
@@ -73,13 +74,16 @@ nextcolumn:
 
     imm r1, 0x114
     ldw r2, [r1]                  ! r2 = x
-    blk sin                       ! r2 = sin(2*pi*x/L)
+    imm r1, 0x104
+    ldw r4, [r1]                  ! r4 = Ly
+    blk sin                       ! r2 = sin(2*pi*x/Ly)
     imm r1, 0x10c
     ldw r3, [r1]                  ! r3 = Ay
     mul r2, r3                    ! r2 = Ay*sin(2*pi*x/Ly)
     imm r1, 0x110
     ldw r3, [r1]                  ! r3 = y
     add r2, r2, r3                ! r2 = y + Ay*sin(2*pi*x/Ly)
+    blk round                     ! r2 = round(r2)
     imm r4, 300                   ! r4 = 300
     blk division                  ! r10 = mod(r2, r4) (Nuevo valor de y)
     
@@ -95,21 +99,21 @@ HLT:
 
                
 ! sin(x) =  4x (180 − x) / [40500 − x (180 − x)]
-! r2 = sin(r2)
+! r2 = sin(r2/r4) = sin(x/L)
 
 sin:
     imm r14, 360
-    add r3, r0, r2
-    mul r3, r14                   ! r3 = x en grados y multiplicado por 2
-    ! div r5/L
+    mul r2, r14                   ! r2 = x en grados y multiplicado por 2
+    blk division                  ! r2 = r2/r4 = x/L
+    add r3, r0, r2                ! r3 = r2 = 2*pi*x*180/(L*pi)
     imm r14, 180
     sub r2, r14, r3               ! r2 = (180 - x)
     mul r2, r3                    ! r2 = x (180 - x)
     imm r14, 40500
-    sub r4, r14, r2               ! r3 = 40500 - x(180 - x)
+    sub r4, r14, r2               ! r4 = 40500 - x(180 - x)
     imm r14, 4
     mul r2, r14                   ! r2 = 4x (180 - x)
-    sli r2, 8
+    sli r2, r2, 8
     blk division                  ! div (r2<<8)/r4
     ret
 
@@ -119,9 +123,9 @@ sin:
 ! r10 = r2%r4
 division:
     xor r3, r3, r3                ! r3 = 0
-    beq r2, r3, divdone           ! Si dividendo es cero => q = 0
+    beq r2, r3, diveqzero         ! Si dividendo es cero => q = 0
     xor r5, r5, r5                ! r5 = 0
-    beq r4, r5, divzero           ! Si el divisor es cero => ?
+    beq r4, r5, divbyzero         ! Si el divisor es cero => ?
     add r3, r0, r4                ! r3 = r4
     blt r2, r3, divtriv
     imm r1, 0x118
@@ -185,8 +189,13 @@ divtriv:
     add r2, r0, r0                ! El cociente es cero
     bal divdone
 
-divzero:
+divbyzero:
     ! Error
+
+diveqzero:
+    add r10, r0, r0               ! El residuo es cero
+    add r2, r0, r0                ! El cociente es cero
+    bal divdone
 
 divdone:
     ! r2: Cociente
@@ -203,7 +212,8 @@ round:
     sri r2, r2, 8               ! Quitar decimales
     bne r12, r13, ready         ! Si el bit 8 es 0
     inc r2, 1 
-    ready
+    ready:
+        ret
 
 
     
