@@ -38,7 +38,7 @@ module core_decode
 	assign dec_ctrl.branch = branch;
 	assign dec_ctrl.execute = execute;
 
-	logic alu, branch, execute, ext, ldst, mul, sys, load;
+	logic alu, branch, execute, ext, ldst, mul, sys;
 
 	always_comb begin
 		alu = 0;
