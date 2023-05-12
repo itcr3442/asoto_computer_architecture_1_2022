@@ -1,59 +1,78 @@
 `include "core/uarch.sv"
 
-// Realiza la operación a * b + c = q
 module core_mul
+#(parameter W=16)
 (
-	input  logic clk,      // clock, ya que es una máquina de estados
-	             rst_n,
-
-	input  word  a,        // primer sumando
-	             b,        // segundo sumando
-	             c_hi,     // parte más significativa de c
-	             c_lo,     // parte menos significativa de c
-	input  logic long_mul, // 1 si c es de 2 words, cualquier otro valor si c es de 1 word
-	             add,      // 1 si c se suma
-	             sig,      // 1 si a y b son signed
-	             start,    // 1 indica que se inicie la multiplicacion
-
-	output word  q_hi,     // parte más significativa del resultado
-	             q_lo,     // parte menos significativa del resultado
-	output logic ready
+    input  logic 		   clk,
+    					   rst,
+    					   start,
+    input  logic [W-1:0]   a,
+    					   b,
+    output logic [2*W-1:0] q,
+    output logic 		   ready
 );
 
-	logic[1:0] wait_state;
-	dword c, q;
+	localparam COUNT_WIDTH = $clog2(a + 1);
+	localparameter IDLE = 1'b0;
+	localparameter START = 1'b1;
 
-	assign ready = !start && wait_state == {$bits(wait_state){1'b0}};
-	assign {q_hi, q_lo} = q;
+	logic [2*W-1:0] q, q_temp, next_q;
+	logic [1:0] temp, next_temp
+	logic [COUNT_WIDTH-1:0] count, next_count, 
+	logic state, next_state, ready, next_ready;
 
-	//TODO: no está probado cuantos ciclos ocupa esto una vez sintetizado
-	dsp_mul it
-	(
-		.clock0(clk),
-		.aclr0(0), //TODO: parece ser active-high, así que no puede ir a rst_n
-		.ena0(start || !ready),
-		.dataa_0(a),
-		.datab_0(b),
-		.chainin(c),
-		.signa(sig),
-		.signb(sig),
-		.result(q)
-	);
+	always_ff @(posedge clk or negedge rst) begin
+		if (!rst) begin
+			q          <= {2*W{1'b0}};
+			ready      <= 1'b0;
+			state 	   <= IDLE;
+			temp       <= 2'b0;
+			count      <= 2'b0;
+		end else begin
+			q          <= next_q;
+			ready      <= next_ready;
+			state 	   <= next_state;
+			temp       <= next_temp;
+			count      <= next_count;
+		end
+	end
 
-	always_comb
-		if(!add)
-			c = {$bits(c){1'b0}};
-		else if(long_mul)
-			c = {c_hi, c_lo};
-		else
-			c = {{$bits(word){sig && c_lo[$bits(c_lo) - 1]}}, c_lo};
+	always_comb begin
+		case (state)
+			IDLE: begin
+				next_count = 2'b0;
+				next_ready = 1'b0;
+				if (start) begin
+					next_state = START;
+					next_temp  = {a[0], 1'b0};
+					next_q     = {{W{1'b0}}, a};
+				end 
+				else begin
+					next_state = state;
+					next_temp  = 2'b0;
+					next_q     = {2*W{1'b0}};
+				end
+			end
 
-	always_ff @(posedge clk or negedge rst_n)
-		if(!rst_n)
-			wait_state <= 0;
-		else if(wait_state > {$bits(wait_state){1'b0}})
-			wait_state <= wait_state - 1;
-		else if(start)
-			wait_state <= {$bits(wait_state){1'b1}};
+			START: begin
+				case (temp)
+					2'b10:   q_temp = {q[2*W-1:W]-b, q[W-1:0]};
+					2'b01:   q_temp = {q[2*W-1:W]+b, q[W-1:0]};
+					default: q_temp = {q[2*W-1:W],   q[W-1:0]};
+				endcase
+				next_temp  = {a[count+1], a[count]};
+				next_count = count + 1'b1;
+				next_q     = q_temp >>> 1;
+				if (count == COUNT_WIDTH-1) begin
+					next_ready = 1'b1;
+					next_state = IDLE;
+				end 
+				else begin
+					next_ready = 1'b0;
+					next_state = state;
+				end
+			end
+		endcase
+	end
 
 endmodule
