@@ -5,7 +5,39 @@
 !   0c  Ay
 !   10  y
 !   14  x
-!   18  divisor
+!   1c  pixeles
+!   20  VRAM
+!   24  nuevo x
+!   28  divisor
+
+
+reset:
+
+!equ START_BUTTON, 0x30050000       Dirección de memoria del botón
+!equ START, 0x00010000              Dirección de memoria de los pixeles
+!equ VRAM, 0x38000000 
+
+imm r1, 0x00010000                ! r1 = direccion de los pixeles
+imm r2, 0x38000000                ! r2 = direccion a VRAM
+imm r4, 307200                    ! r4 = (640*480)
+imm r5, 0                         ! r5 = 0
+
+init:
+    ldw r3, [r1]    	          ! r3 = pixel
+    inc r1, 4
+    stw [r2], r3                  ! Guardar pixel en VRAM
+    inc r2, 4
+    inc r5, 1         	          ! Incrementa contador de tamaño de la imagen
+    bne r4, r5, init
+
+imm r1, 0x00010000                ! r1 = direccion de los pixeles
+imm r2, 0x38000000                ! r2 = direccion a VRAM
+imm r4, 0x30050000                ! r4 = direccion del boton
+imm r7, 0                         ! r7 = 0
+
+idle:
+    ldw r6, [r4]                  ! Leer valor del botón 
+    beq r6, r7, idle              ! Botón != 1, esperar
 
 start:
     imm r1, 0x100                 ! Posicion de memoria (?)
@@ -22,8 +54,28 @@ start:
     stw [r1], r0                  ! Height (y): Cantidad de filas de la imagen
     inc r1, 4
     stw [r1], r0                  ! Width  (x): Cantidad de columnas de la imagen
+    imm r2, 0x00010000            ! r2 = direccion de los pixeles
+    inc r1, 4
+    stw [r1], r2  
+    imm r2, 0x38000000            ! r2 = direccion a VRAM
+    inc r1, 4
+    stw [r1], r2  
 
 mainloop:
+
+    imm r1, 0x11c                 ! Reiniciar
+    imm r4, 0x00010000
+    stw [r1], r4                  ! Posicionarse al inicio de los pixeles
+
+    imm r4, 307200                ! r4 = (640*480)
+    imm r5, 0                     ! r5 = 0
+    clearVRAM:
+        imm r3, 0x00000000        ! Poner la pantalla en color negro
+        stw [r2], r3              ! Guardar pixel en VRAM
+        inc r2, 4
+        inc r5, 1         	      ! Incrementa contador de tamaño de la imagen
+        bne r4, r5, clearVRAM
+
     imm r1, 0x108
     ldw r2, [r1]                  ! Cargar Ax
     inc r2, 5                     ! Sumar 5 al contador
@@ -32,6 +84,7 @@ mainloop:
     ldw r2, [r1]                  ! Cargar Ay
     inc r2, 5                     ! Sumar 5 al contador
     stw [r1], r2
+
     imm r3, 201
     bne r2, r3, rippling          ! Realizar el efecto
     bal HLT                       ! Finalizó
@@ -41,7 +94,7 @@ rippling:
     ldw r2, [r1]                  ! Cargar y
     inc r2, 1                     ! y += 1
     stw [r1], r2
-    imm r3, 301
+    imm r3, 481
     beq r2, r3, mainloop          ! Si y llegó al máximo de filas
     
 nextcolumn:
@@ -49,7 +102,7 @@ nextcolumn:
     ldw r2, [r1]                  ! Cargar x
     inc r2, 1                     ! x += 1
     stw [r1], r2
-    imm r3, 301
+    imm r3, 641
     beq r2, r3, rippling          ! Si x llegó al máximo de columnas
 
 !======= Cálculo de nuevo x =======!
@@ -66,9 +119,10 @@ nextcolumn:
     ldw r3, [r1]                  ! r3 = x
     add r2, r2, r3                ! r2 = x + Ax*sin(2*pi*y/Lx)
     blk round                     ! r2 = round(r2)
-    imm r4, 300                   ! r4 = 300
-    blk division                  ! r10 = mod(r2, r4) 
-    add r11, r0, r10              ! r11 = r10 (Nuevo valor de x)
+    imm r4, 640                   ! r4 = 640
+    blk division                  ! r10 = mod(r2, r4)
+    imm r1, 0x124 
+    stw [r1], r10                 ! r10 = Nuevo valor de x
 
 !======= Cálculo de nuevo y =======!
 
@@ -84,15 +138,42 @@ nextcolumn:
     ldw r3, [r1]                  ! r3 = y
     add r2, r2, r3                ! r2 = y + Ay*sin(2*pi*x/Ly)
     blk round                     ! r2 = round(r2)
-    imm r4, 300                   ! r4 = 300
+    imm r4, 480                   ! r4 = 480
     blk division                  ! r10 = mod(r2, r4) (Nuevo valor de y)
     
-    !if
+!======= Almacenar en VRAM =======!
+
+    imm r1, 0x124 
+    ldw r5, [r1]                  ! r5 = nuevo x
+    imm r1, 0x11c 
+    ldw r4, [r1] 	              ! r4 = 0x00010000 (Pixeles)
+    ldw r3, [r4]                  ! r3 = pixel
+    inc r4, 4
+    stw [r1], r4                  ! Guardar posicion del siguiente pixel
+    imm r1, 0x120                 
+    ldw r4, [r1]                  ! r4 = 0x38000000 (VRAM)
+    add r6, r0, r5                ! r6 = r5
+    dec r10, 1                    ! nuevo y -= 1
+    imm r7, 640                   
+    mul r10, r7                   ! Calcular offset de eje y
+    add r6, r6, r10               ! Sumar offset + nuevo x
+    imm r7, 4                     
+    mul r6, r7                    ! Calcular posicion de memoria
+    add r4, r4, r6                ! r4 = nueva posicion en VRAM 
+    stw [r4], r3                  ! Guardar pixel en su nueva posicion
 
     bal nextcolumn
 
 
 HLT:
+
+imm r4, 0x30050000                ! r4 = direccion del boton
+imm r7, 1                         ! r7 = 1
+
+release:
+    ldw r6, [r4]                  ! Leer valor del botón 
+    bne r6, r7, release           ! Botón != 1
+    bal reset
 
     
 
@@ -128,7 +209,7 @@ division:
     beq r4, r5, divbyzero         ! Si el divisor es cero => ?
     add r3, r0, r4                ! r3 = r4
     blt r2, r3, divtriv
-    imm r1, 0x118
+    imm r1, 0x128
     stw [r1], r4
 
     add r4, r0, r2                ! r4 = r2
@@ -154,9 +235,10 @@ division:
 
     continue:
     add r6, r0, r5                 ! r6 = r5
-    imm r1, 0x118
+    imm r1, 0x128
     ldw r11, [r1]                  ! r11 = divisor
     add r8, r0, r8
+    xor r10, r10, r10
     
 ! Reservados: 
 !   r2: dividendo
