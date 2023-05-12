@@ -5,9 +5,6 @@
 // _m_  means data exchange with memory    //
 // Replacement policy is LRU (8bit)        //
 
-
-`default_nettype none
-
 module core_cache_4way(clk,
                        rst_n,
                        i_p_addr,
