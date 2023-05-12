@@ -44,12 +44,14 @@ module conspiracion
 	output wire [7:0]  vga_dac_b
 );
 
-	logic button;
-	logic[3:0] data_be;
-	logic[29:0] addr;
-	logic[31:0] data_rd, data_wr;
-	logic reset_reset_n, cpu_clk, cpu_rst_n, cpu_halt,
-	      ready, write, start, irq;
+	logic button, reset_reset_n, cpu_clk, cpu_rst_n, cpu_halt, irq;
+
+	logic insn_ready, data_ready, insn_start, data_start, data_write;
+	logic[3:0] data_data_be;
+	logic[27:0] insn_addr;
+	logic[29:0] data_addr;
+	logic[31:0] data_data_rd, data_data_wr;
+	logic[127:0] insn_data_rd;
 
 `ifdef VERILATOR
 	assign cpu_halt = halt;
@@ -84,13 +86,6 @@ module conspiracion
 		.rst_n(cpu_rst_n),
 		.halt(cpu_halt),
 		.halted(cpu_halted),
-		.bus_addr(addr),
-		.bus_data_rd(data_rd),
-		.bus_data_wr(data_wr),
-		.bus_data_be(data_be),
-		.bus_ready(ready),
-		.bus_write(write),
-		.bus_start(start),
 		.*
 	);
 
@@ -98,14 +93,18 @@ module conspiracion
 	(
 		.master_0_core_cpu_clk(cpu_clk),
 		.master_0_core_cpu_rst_n(cpu_rst_n),
-		.master_0_core_addr(addr),
-		.master_0_core_data_rd(data_rd),
-		.master_0_core_data_wr(data_wr),
-		.master_0_core_data_be(data_be),
-		.master_0_core_ready(ready),
-		.master_0_core_write(write),
-		.master_0_core_start(start),
 		.master_0_core_irq(irq),
+		.master_0_core_insn_ready(insn_ready),
+		.master_0_core_data_ready(data_ready),
+		.master_0_core_insn_data_rd(insn_data_rd),
+		.master_0_core_data_data_rd(data_data_rd),
+		.master_0_core_data_data_wr(data_data_wr),
+		.master_0_core_insn_addr(insn_addr),
+		.master_0_core_data_addr(data_addr),
+		.master_0_core_insn_start(insn_start),
+		.master_0_core_data_start(data_start),
+		.master_0_core_data_write(data_write),
+		.master_0_core_data_data_be(data_data_be),
 		.pll_0_reset_reset(0), //TODO: reset controller, algún día
 		.pio_0_external_connection_export(pio_leds),
 		.switches_external_connection_export({2'b00, pio_switches}),

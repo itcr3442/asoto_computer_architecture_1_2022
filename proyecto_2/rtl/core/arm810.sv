@@ -8,28 +8,42 @@ module arm810
 	input  logic      irq,
 	                  halt,
 
-	output ptr        bus_addr,
-	output logic      bus_start,
-	                  bus_write,
-	input  logic      bus_ready,
-	input  word       bus_data_rd,
-	output word       bus_data_wr,
-	output logic[3:0] bus_data_be,
+	input  logic      insn_ready,
+					  data_ready,
+	input  qword      insn_data_rd,
+	input  word		  data_data_rd,
+
+	output word       data_data_wr,
+	output qptr       insn_addr,
+	output ptr        data_addr,
+	output logic      insn_start,
+					  data_start,
+					  data_write,
+	output logic[3:0] data_data_be,
 
 	output logic      halted
 );
 
-	ptr insn_addr;
+	word fetch_data_rd;
+	logic fetch_ready;
+
+	core_cache_l1i l1i
+	(
+		.*
+	);
+
+
+	ptr fetch_addr;
 	hptr hi_insn_pc, lo_insn_pc;
 	hword hi_insn, lo_insn;
-	logic flush, insn_start;
+	logic flush, fetch_start;
 
 	core_fetch #(.PREFETCH_ORDER(2)) fetch
 	(
-		.addr(insn_addr),
-		.fetch(insn_start),
-		.fetched(insn_ready),
-		.fetch_data(insn_data_rd),
+		.addr(fetch_addr),
+		.fetch(fetch_start),
+		.fetched(fetch_ready),
+		.fetch_data(fetch_data_rd),
 		.prefetch_flush(halt),
 		.*
 	);
@@ -157,17 +171,6 @@ module arm810
 	logic wb_stall_branch, wb_stall_ldst;
 
 	core_writeback wb
-	(
-		.*
-	);
-
-	ptr data_addr;
-	word data_data_rd, data_data_wr, insn_data_rd;
-	logic[3:0] data_data_be;
-
-	logic data_start, data_write, data_ready, insn_ready;
-
-	core_arbiter arbiter
 	(
 		.*
 	);

@@ -1,46 +1,65 @@
 module bus_master
 (
-	input  logic       clk,
-	                   rst_n,
+	input  logic        clk,
+	                    rst_n,
 
-	input  logic[29:0] addr,
-	input  logic       start,
-	                   write,
-	output logic       ready,
-	output logic[31:0] data_rd,
-	input  logic[31:0] data_wr,
-	input  logic[3:0]  data_be,
-	output logic       cpu_clk,
-	                   cpu_rst_n,
-	                   irq,
+	output logic        cpu_clk,
+	                    cpu_rst_n,
+	                    irq,
 
-	output logic[31:0] avl_address,
-	output logic       avl_read,
-	                   avl_write,
-	input  logic[31:0] avl_readdata,
-	output logic[31:0] avl_writedata,
-	input  logic       avl_waitrequest,
-	output logic[3:0]  avl_byteenable,
-	input  logic       avl_irq
+	output logic        insn_ready,
+						data_ready,
+	output logic[127:0] insn_data_rd,
+	output logic[31:0]	data_data_rd,
+
+	input  logic[31:0]  data_data_wr,
+	input  logic[27:0]  insn_addr,
+	input  logic[29:0]	data_addr,
+	input  logic        insn_start,
+						data_start,
+						data_write,
+	input  logic[3:0]   data_data_be,
+
+	output logic[31:0]  avl_data_address,
+	output logic        avl_data_read,
+	                    avl_data_write,
+	input  logic[31:0]  avl_data_readdata,
+	output logic[31:0]  avl_data_writedata,
+	input  logic        avl_data_waitrequest,
+	output logic[3:0]   avl_data_byteenable,
+
+	output logic[31:0]  avl_insn_address,
+	output logic        avl_insn_read,
+	input  logic[127:0] avl_insn_readdata,
+	input  logic        avl_insn_waitrequest,
+
+	input  logic        avl_irq
 );
 
 	enum int unsigned
 	{
 		IDLE,
 		WAIT
-	} state;
+	} d_state, i_state;
 
 	assign irq = avl_irq;
 	assign cpu_clk = clk;
 	assign cpu_rst_n = rst_n;
 
-	assign data_rd = avl_readdata;
+	assign data_data_rd = avl_data_readdata;
+	assign insn_data_rd = avl_insn_readdata;
 
-	always_comb
-		unique case(state)
-			IDLE: ready = 0;
-			WAIT: ready = !avl_waitrequest;
+	always_comb begin
+		unique case(d_state)
+			IDLE: data_ready = 0;
+			WAIT: data_ready = !avl_data_waitrequest;
 		endcase
+
+		unique case(i_state)
+			IDLE: insn_ready = 0;
+			WAIT: insn_ready = !avl_insn_waitrequest;
+		endcase
+	end
 
 	always_ff @(posedge clk or negedge rst_n)
 		/* P. 16:
@@ -51,23 +70,38 @@ module bus_master
 		 * beginbursttransfer.
 		 */
 		if(!rst_n) begin
-			state <= IDLE;
-			avl_read <= 0;
-			avl_write <= 0;
-			avl_address <= 0;
-			avl_writedata <= 0;
-			avl_byteenable <= 0;
-		end else if((state == IDLE || !avl_waitrequest) && start) begin
-			state <= WAIT;
-			avl_read <= ~write;
-			avl_write <= write;
-			avl_address <= {addr, 2'b00};
-			avl_writedata <= data_wr;
-			avl_byteenable <= write ? data_be : 4'b1111;
-		end else if(state == WAIT && !avl_waitrequest) begin
-			state <= IDLE;
-			avl_read <= 0;
-			avl_write <= 0;
+			d_state <= IDLE;
+			avl_data_read <= 0;
+			avl_data_write <= 0;
+			avl_data_address <= 0;
+			avl_data_writedata <= 0;
+			avl_data_byteenable <= 0;
+			
+			i_state <= IDLE;
+			avl_insn_read <= 0;
+			avl_insn_address <= 0;
+		end else begin
+			if((d_state == IDLE || !avl_data_waitrequest) && data_start) begin
+				d_state <= WAIT;
+				avl_data_read <= ~data_write;
+				avl_data_write <= data_write;
+				avl_data_address <= {data_addr, 2'b00};
+				avl_data_writedata <= data_data_wr;
+				avl_data_byteenable <= data_write ? data_data_be : 4'b1111;
+			end else if(d_state == WAIT && !avl_data_waitrequest) begin
+				d_state <= IDLE;
+				avl_data_read <= 0;
+				avl_data_write <= 0;
+			end
+
+			if((i_state == IDLE || !avl_insn_waitrequest) && insn_start) begin
+				i_state <= WAIT;
+				avl_insn_read <= 1;
+				avl_insn_address <= {insn_addr, 4'b0000};
+			end else if(i_state == WAIT && !avl_insn_waitrequest) begin
+				i_state <= IDLE;
+				avl_insn_read <= 0;
+			end
 		end
 
 endmodule
