@@ -15,6 +15,12 @@ typedef logic[30:0] hptr;
 
 `define R0 4'b0000
 
+// `COND_ALWAYS no existe en ISA, es una conveniencia de microarquitectura
+`define COND_ALWAYS 2'b00
+`define COND_LT     2'b01
+`define COND_EQ     2'b10
+`define COND_NE     2'b11
+
 `define NUM_GPREGS 16
 typedef logic[$clog2(`NUM_GPREGS) - 1:0] reg_num;
 
