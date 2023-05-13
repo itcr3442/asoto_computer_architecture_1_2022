@@ -15,9 +15,11 @@ module core_dispatch
 	                    mask_alu_b,
 	                    mask_branch,
 	                    mask_ldst,
+	                    mask_mul,
 	input  logic        flush,
 	                    branch_stall,
 	                    ldst_wait,
+	                    mul_ab_stall,
 	                    wb_stall_branch,
 
 	output logic        stall,
@@ -129,14 +131,16 @@ module core_dispatch
 			start_alu_a <= dispatch_a && cur_a.ctrl.alu;
 			start_alu_b <= dispatch_b && cur_b.ctrl.alu;
 
-			start_mul <= (dispatch_a && cur_a.ctrl.execute && cur_a.ctrl.mul)
-			          || (dispatch_b && cur_b.ctrl.execute && cur_b.ctrl.mul);
-
 			start_ldst <= (dispatch_a && cur_a.ctrl.execute && cur_a.ctrl.ldst)
 			           || (dispatch_b && cur_b.ctrl.execute && cur_b.ctrl.ldst);
 
 			start_branch <= (dispatch_a && cur_a.ctrl.execute && cur_a.ctrl.branch)
 			             || (dispatch_b && cur_b.ctrl.execute && cur_b.ctrl.branch);
+
+			// mul_ab_stall depende combinacionalmente de start_mul
+			if(!mul_ab_stall)
+				start_mul <= (dispatch_a && cur_a.ctrl.execute && cur_a.ctrl.mul)
+				          || (dispatch_b && cur_b.ctrl.execute && cur_b.ctrl.mul);
 		end
 
 	// No necesitan reset
@@ -149,7 +153,6 @@ module core_dispatch
 
 		last_b_single <= dispatch_b && cur_b.ctrl.execute
 	                  && (cur_b.ctrl.ldst || cur_b.ctrl.mul || cur_b.ctrl.branch);
-
 	end
 
 endmodule

@@ -45,12 +45,6 @@
 `define FIELD_BCC_J_SGN [12]
 `define FIELD_BCC_C     [5:4]
 
-// `COND_ALWAYS no existe en ISA, es una conveniencia de microarquitectura
-`define COND_ALWAYS 2'b00
-`define COND_LT     2'b01
-`define COND_EQ     2'b10
-`define COND_NE     2'b11
-
 // Direccionado relativo a PC
 
 `define GROUP_ADR       16'b????_????_??11_????

@@ -149,26 +149,24 @@ module arm810
 		.*
 	);
 
-	logic mul_add, mul_long, mul_signed, mul_ready;
-	word mul_a, mul_b, mul_c_hi, mul_c_lo, mul_q_hi, mul_q_lo;
+	logic mul_ab_stall;
+	hword mask_mul;
+	wb_line wb_mul;
 
-	core_mul mult
+	core_mul ex_mul
 	(
-		.a(mul_a),
-		.b(mul_b),
-		.c_hi(mul_c_hi),
-		.c_lo(mul_c_lo),
-		.long_mul(mul_long),
-		.add(mul_add),
-		.sig(mul_signed),
+		.a(single_rd_value_a),
+		.b(single_rd_value_b),
+		.wb(wb_mul),
+		.dec(dec_single),
 		.start(start_mul),
-		.q_hi(mul_q_hi),
-		.q_lo(mul_q_lo),
-		.ready(mul_ready),
+		.raw_mask(mask_mul),
+		.ab_stall(mul_ab_stall),
+		.wb_stall(wb_stall_mul),
 		.*
 	);
 
-	logic wb_stall_branch, wb_stall_ldst;
+	logic wb_stall_branch, wb_stall_ldst, wb_stall_mul;
 
 	core_writeback wb
 	(
