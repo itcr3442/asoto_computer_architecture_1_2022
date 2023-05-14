@@ -106,21 +106,4 @@ typedef struct packed
 	reg_num rd;
 } wb_line;
 
-// Ver comentario en cycles.sv, este diseño es más óptimo
-typedef struct packed
-{
-	logic issue,
-	      rd_indirect_shift,
-	      with_shift,
-	      transfer,
-	      base_writeback,
-	      escalate,
-	      exception,
-	      mul,
-	      mul_acc_ld,
-	      mul_hi_wb,
-	      psr,
-	      coproc;
-} ctrl_cycle;
-
 `endif
