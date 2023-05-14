@@ -1,6 +1,7 @@
 import sys
 import string
 
+REG_STACK     = 14
 REG_LINK      = 15
 LABEL_CHARSET = string.ascii_letters
 
@@ -26,10 +27,13 @@ class Ins:
         else:
             self.error(f"Too many arguments")
 
-    def next(self):
+    def next(self, *, optional=False):
         try:
             return next(self.args)
         except StopIteration:
+            if optional:
+                return None
+
             self.error(f"Missing arguments")
 
     def error(self, msg):
@@ -57,9 +61,11 @@ class Ins:
 
         return imm
 
-    def parse_reg(self, *, zero=True, arg=None, expect=None):
+    def parse_reg(self, *, zero=True, arg=None, expect=None, optional=False):
         if not arg:
-            arg = self.next()
+            arg = self.next(optional=optional)
+            if arg is None:
+                return None
 
         arg = arg.lower()
 
@@ -399,6 +405,48 @@ class Raw(Ins):
                 return [(lo,), (hi,)]
 
 
+class Push_pop(Ins):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        match self.name:
+            case "psh":
+                self.pop = False
+            case "pop":
+                self.pop = True
+
+        self.regs = [self.parse_reg(zero=not self.pop)]
+        while True:
+            reg = self.parse_reg(zero=not self.pop, optional=True)
+            if reg is None:
+                break
+
+            self.regs.append(reg)
+
+        if any(reg == REG_STACK for reg in self.regs):
+            self.error('refusing to push or pop the stack pointer')
+
+    def length(self):
+        return 2 * len(self.regs)
+
+    def encode(self, labels):
+        encs = []
+        sp = self.encode_reg(REG_STACK)
+
+        if self.pop:
+            for reg in self.regs[::-1]:
+                enc = self.encode_reg(reg)
+                encs.append(('00000', sp, '101', enc))
+                encs.append(('001000000001', sp))
+        else:
+            for reg in self.regs:
+                enc = self.encode_reg(reg)
+                encs.append(('001000000101', sp))
+                encs.append(('00000', enc, '001', sp))
+
+        return encs
+
+
 ISA = {
     "bal": Icond_rel_j,
     "hlt": Icond_rel_j,
@@ -429,6 +477,8 @@ ISA = {
     "neg": Alu_reg_reg,
     "inc": Alu_reg_inc_dec_imm5,
     "dec": Alu_reg_inc_dec_imm5,
+    "psh": Push_pop,
+    "pop": Push_pop,
     "word": Raw,
     "hword": Raw,
 }
