@@ -57,7 +57,7 @@ class Ins:
 
         return imm
 
-    def parse_reg(self, *, zero=True, arg=None):
+    def parse_reg(self, *, zero=True, arg=None, expect=None):
         if not arg:
             arg = self.next()
 
@@ -71,12 +71,13 @@ class Ins:
 
             if not (0 <= reg <= 15):
                 raise ValueError()
-
         except ValueError:
             self.error(f"Invalid register: {repr(arg)}")
 
         if not zero and not reg:
-            self.error("Register must not be r0.")
+            self.error("Register must not be r0")
+        elif expect is not None and reg != expect:
+            self.error(f"Expected register r{expect}, got r{reg}")
 
         return reg
 
@@ -123,7 +124,13 @@ class Icond_rel_j(Ins):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.target = self.parse_target()
+        match self.name:
+            case "bal":
+                self.target = self.parse_target()
+            case "hlt":
+                self.target = self.addr
+            case "nop":
+                self.target = self.addr + 1
 
     def encode(self, labels):
         j = self.encode_rel(labels, self.target, 12)
@@ -150,6 +157,8 @@ class Mul(Ins):
         super().__init__(*args, **kwargs)
 
         self.rz = self.parse_reg(zero=False)
+        self.parse_reg(expect=self.rz)
+
         self.ra = self.parse_reg(zero=False)
 
     def encode(self, labels):
@@ -268,8 +277,19 @@ class Alu_reg_reg(Ins):
         super().__init__(*args, **kwargs)
 
         self.rd = self.parse_reg(zero=False)
-        self.ra = self.parse_reg()
-        self.rb = self.parse_reg()
+
+        match self.name:
+            case "neg":
+                self.ra = 0
+            case _:
+                self.ra = self.parse_reg()
+
+        match self.name:
+            case "mov":
+                self.rb = 0
+            case _:
+                self.rb = self.parse_reg()
+
         match self.name:
             case "and":
                 self.o = "001"
@@ -281,7 +301,7 @@ class Alu_reg_reg(Ins):
                 self.o = "100"
             case "shr":
                 self.o = "101"
-            case "add":
+            case "add" | "mov":
                 self.o = "110"
             case "sub":
                 self.o = "111"
@@ -355,8 +375,34 @@ class Alu_reg_imm5(Ins):
         return (i, a, s, "01", d)
 
 
+class Raw(Ins):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.imm = self.parse_imm()
+
+        match self.name:
+            case "word":
+                self.size = 2
+            case "hword":
+                self.size = 1
+
+    def length(self):
+        return self.size
+
+    def encode(self, labels):
+        match self.size:
+            case 1:
+                return (self.encode_unsigned(self.imm, 16),)
+            case 2:
+                lo = self.encode_unsigned(self.imm & 0xffff, 16)
+                hi = self.encode_unsigned(self.imm >> 16, 16)
+                return [(lo,), (hi,)]
+
+
 ISA = {
     "bal": Icond_rel_j,
+    "hlt": Icond_rel_j,
+    "nop": Icond_rel_j,
     "ext": Ext_space,
     "mul": Mul,
     "bin": Icond_ind_j,
@@ -371,6 +417,7 @@ ISA = {
     "and": Alu_reg_reg,
     "orr": Alu_reg_reg,
     "xor": Alu_reg_reg,
+    "mov": Alu_reg_reg,
     "ldw": Ls,
     "stw": Ls,
     "shl": Alu_reg_reg,
@@ -379,8 +426,11 @@ ISA = {
     "sri": Alu_reg_imm5,
     "add": Alu_reg_reg,
     "sub": Alu_reg_reg,
+    "neg": Alu_reg_reg,
     "inc": Alu_reg_inc_dec_imm5,
     "dec": Alu_reg_inc_dec_imm5,
+    "word": Raw,
+    "hword": Raw,
 }
 
 
