@@ -58,9 +58,7 @@ start:
 mainloop:
 
     imm r1, 0x0000001c            ! Reiniciar
-    imm r2, 0x38000000            ! r2 = direccion a VRAM
-    imm r4, 0x00010000
-    stw [r1], r4                  ! Posicionarse al inicio de los pixeles
+    stw [r1], r0                  ! Posicionarse al inicio de los pixeles
 
     imm r4, 307200                ! r4 = (640*480)
     imm r5, 0                     ! r5 = 0
