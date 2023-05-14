@@ -30,15 +30,14 @@ init:
     inc r5, 1         	          ! Incrementa contador de tamaño de la imagen
     bne r4, r5, init
 
-imm r4, 0x30050000                ! r4 = direccion del boton
+imm r4, 0x30050000                ! r4 = direccion del boton (pin AA14)
 imm r7, 0                         ! r7 = 0
-
 idle:
     ldw r6, [r4]                  ! Leer valor del botón 
     beq r6, r7, idle              ! Botón != 1, esperar
 
 start:
-    imm r1, 0x00000000            ! Direccion para guardar variables
+    imm r1, 0x00001000            ! Direccion para guardar variables
     imm r2, 75                
     stw [r1], r2                  ! Lx
     imm r2, 75                
@@ -56,36 +55,37 @@ start:
     stw [r1], r0                  ! Contador memoria
 
 mainloop:
+    imm r1, 0x0000101c            ! Reiniciar
+    stw [r1], r0                  ! Posicionarse al inicio de los pixeles (x)
 
-    imm r1, 0x0000001c            ! Reiniciar
-    stw [r1], r0                  ! Posicionarse al inicio de los pixeles
-
+    imm r1, 0x00001010            ! Reiniciar
+    stw [r1], r0                  ! Posicionarse al inicio de los pixeles (y)
     imm r4, 307200                ! r4 = (640*480)
     imm r5, 0                     ! r5 = 0
+    imm r2, 0x38000000            ! r2 = direccion a VRAM
     clearVRAM:
-        imm r3, 0x00000000        ! Poner la pantalla en color negro
-        stw [r2], r3              ! Guardar pixel en VRAM
+        stw [r2], r0              ! Guardar pixel en VRAM
         inc r2, 4
         inc r5, 1         	      ! Incrementa contador de tamaño de la imagen
         bne r4, r5, clearVRAM
 
-    imm r1, 0x00000008
+    imm r1, 0x00001008
     ldw r2, [r1]                  ! Cargar Ax
     inc r2, 5                     ! Sumar 5 al contador
     stw [r1], r2
-    imm r1, 0x0000000c
+    imm r1, 0x0000100c
     ldw r2, [r1]                  ! Cargar Ay
     inc r2, 5                     ! Sumar 5 al contador
     stw [r1], r2
 
     imm r3, 201
     bne r2, r3, rippling          ! Realizar el efecto
-    bal HLT                       ! Finalizó
+    hlt                           ! Finalizó
 
 rippling:
-    imm r1, 0x00000014
+    imm r1, 0x00001014
     stw [r1], r0                  ! Reiniciar x
-    imm r1, 0x00000010
+    imm r1, 0x00001010
     ldw r2, [r1]                  ! Cargar y
     inc r2, 1                     ! y += 1
     stw [r1], r2
@@ -93,7 +93,7 @@ rippling:
     beq r2, r3, mainloop          ! Si y llegó al máximo de filas
     
 nextcolumn:
-    imm r1, 0x00000014
+    imm r1, 0x00001014
     ldw r2, [r1]                  ! Cargar x
     inc r2, 1                     ! x += 1
     stw [r1], r2
@@ -101,35 +101,33 @@ nextcolumn:
     beq r2, r3, rippling          ! Si x llegó al máximo de columnas
 
 !======= Cálculo de nuevo x =======!
-
-    imm r1, 0x00000010
+    imm r1, 0x00001010
     ldw r2, [r1]                  ! r2 = y
-    imm r1, 0x00000000
+    imm r1, 0x00001000
     ldw r4, [r1]                  ! r4 = Lx
     blk sin                       ! r2 = sin(2*pi*y/Lx)
-    imm r1, 0x00000008
+    imm r1, 0x00001008
     ldw r3, [r1]                  ! r3 = Ax
     mul r2, r2, r3                ! r2 = Ax*sin(2*pi*y/Lx)
-    imm r1, 0x00000014
+    imm r1, 0x00001014
     ldw r3, [r1]                  ! r3 = x
     add r2, r2, r3                ! r2 = x + Ax*sin(2*pi*y/Lx)
     blk round                     ! r2 = round(r2)
     imm r4, 640                   ! r4 = 640
     blk division                  ! r10 = mod(r2, r4)
-    imm r1, 0x00000024 
+    imm r1, 0x00001024 
     stw [r1], r10                 ! r10 = Nuevo valor de x
 
 !======= Cálculo de nuevo y =======!
-
-    imm r1, 0x00000014
+    imm r1, 0x00001014
     ldw r2, [r1]                  ! r2 = x
-    imm r1, 0x00000004
+    imm r1, 0x00001004
     ldw r4, [r1]                  ! r4 = Ly
     blk sin                       ! r2 = sin(2*pi*x/Ly)
-    imm r1, 0x0000000c
+    imm r1, 0x0000100c
     ldw r3, [r1]                  ! r3 = Ay
     mul r2, r2, r3                ! r2 = Ay*sin(2*pi*x/Ly)
-    imm r1, 0x00000010
+    imm r1, 0x00001010
     ldw r3, [r1]                  ! r3 = y
     add r2, r2, r3                ! r2 = y + Ay*sin(2*pi*x/Ly)
     blk round                     ! r2 = round(r2)
@@ -137,10 +135,9 @@ nextcolumn:
     blk division                  ! r10 = mod(r2, r4) (Nuevo valor de y)
     
 !======= Almacenar en VRAM =======!
-
-    imm r1, 0x00000024 
+    imm r1, 0x00001024 
     ldw r5, [r1]                  ! r5 = nuevo x
-    imm r1, 0x0000001c 
+    imm r1, 0x0000101c 
     ldw r4, [r1] 	              ! r4 = Contador memoria
     imm r2, 0x00010000
     add r2, r2, r4                ! Sumar offset al contador
@@ -159,25 +156,14 @@ nextcolumn:
 
     bal nextcolumn
 
-
-HLT:
-
-imm r4, 0x30050000                ! r4 = direccion del boton
-imm r7, 1                         ! r7 = 1
-
-release:
-    ldw r6, [r4]                  ! Leer valor del botón 
-    bne r6, r7, release           ! Botón != 1
-    bal reset
-
-    
-
-
                
-! sin(x) =  4x (180 − x) / [40500 − x (180 − x)]
+! sin(x) =  4x (180 - x) / [40500 - x (180 - x)]
 ! r2 = sin(r2/r4) = sin(x/L)
 
 sin:
+imm r1, 0x30000000             ! print
+imm r13, 0x52                  ! print(S)
+stw [r1], r13                  ! print
     imm r14, 360
     mul r2, r2, r14               ! r2 = x en grados y multiplicado por 2
     blk division                  ! r2 = r2/r4 = x/L
@@ -192,7 +178,6 @@ sin:
     blk division                  ! div (r2<<8)/r4
     ret
 
- 
 
 ! r2  = r2/r4
 ! r10 = r2%r4
@@ -203,7 +188,7 @@ division:
     beq r4, r5, divbyzero         ! Si el divisor es cero => ?
     add r3, r0, r4                ! r3 = r4
     blt r2, r3, divtriv
-    imm r1, 0x00000028
+    imm r1, 0x00001028
     stw [r1], r4
 
     add r4, r0, r2                ! r4 = r2
@@ -229,7 +214,7 @@ division:
 
     continue:
     add r6, r0, r5                 ! r6 = r5
-    imm r1, 0x00000028
+    imm r1, 0x00001028
     ldw r11, [r1]                  ! r11 = divisor
     xor r10, r10, r10
     imm r8, 1
@@ -259,6 +244,7 @@ divloop:
     beq r8, r9, divloop           ! Si r9 == 1, no hacer nada
     inc r2, 1                     ! Sino agregar 1 al final de Q
     add r10, r0, r12
+    bal divloop
 
 divtriv:
     add r10, r0, r2               ! El residuo es el dividendo
@@ -291,14 +277,3 @@ round:
     inc r2, 1 
     ready:
         ret
-
-
-    
-
-
-
-
-
-
-
-
