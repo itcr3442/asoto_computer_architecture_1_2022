@@ -1,6 +1,6 @@
 `include "core/uarch.sv"
 
-module arm810
+module mar810
 (
 	input  logic      clk,
 	                  rst_n,
