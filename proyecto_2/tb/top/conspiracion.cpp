@@ -14,7 +14,7 @@
 #include <verilated_vcd_c.h>
 
 #include "Vconspiracion.h"
-#include "Vconspiracion_arm810.h"
+#include "Vconspiracion_mar810.h"
 #include "Vconspiracion_conspiracion.h"
 #include "Vconspiracion_platform.h"
 #include "Vconspiracion_vga_domain.h"

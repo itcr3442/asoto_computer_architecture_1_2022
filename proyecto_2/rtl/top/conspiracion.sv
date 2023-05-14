@@ -80,7 +80,7 @@ module conspiracion
 	);
 `endif
 
-	arm810 core
+	mar810 core
 	(
 		.clk(cpu_clk),
 		.rst_n(cpu_rst_n),

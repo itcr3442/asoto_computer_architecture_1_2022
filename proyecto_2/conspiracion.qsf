@@ -215,7 +215,7 @@ set_global_assignment -name SYSTEMVERILOG_FILE rtl/core/raw_mask.sv
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/core/regs/forward.sv
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/core/regs/regs.sv
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/core/uarch.sv
-set_global_assignment -name SYSTEMVERILOG_FILE rtl/core/arm810.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/core/mar810.sv
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/core/writeback.sv
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/core/branch.sv
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/core/ldst.sv
