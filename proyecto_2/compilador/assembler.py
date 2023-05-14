@@ -129,6 +129,8 @@ class Icond_rel_j(Ins):
                 self.target = self.parse_target()
             case "hlt":
                 self.target = self.addr
+            case "nop":
+                self.target = self.addr + 1
 
     def encode(self, labels):
         j = self.encode_rel(labels, self.target, 12)
@@ -275,7 +277,12 @@ class Alu_reg_reg(Ins):
         super().__init__(*args, **kwargs)
 
         self.rd = self.parse_reg(zero=False)
-        self.ra = self.parse_reg()
+
+        match self.name:
+            case "neg":
+                self.ra = 0
+            case _:
+                self.ra = self.parse_reg()
 
         match self.name:
             case "mov":
@@ -371,6 +378,7 @@ class Alu_reg_imm5(Ins):
 ISA = {
     "bal": Icond_rel_j,
     "hlt": Icond_rel_j,
+    "nop": Icond_rel_j,
     "ext": Ext_space,
     "mul": Mul,
     "bin": Icond_ind_j,
@@ -394,6 +402,7 @@ ISA = {
     "sri": Alu_reg_imm5,
     "add": Alu_reg_reg,
     "sub": Alu_reg_reg,
+    "neg": Alu_reg_reg,
     "inc": Alu_reg_inc_dec_imm5,
     "dec": Alu_reg_inc_dec_imm5,
 }
