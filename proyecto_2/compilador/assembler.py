@@ -57,7 +57,7 @@ class Ins:
 
         return imm
 
-    def parse_reg(self, *, zero=True, arg=None):
+    def parse_reg(self, *, zero=True, arg=None, expect=None):
         if not arg:
             arg = self.next()
 
@@ -71,12 +71,13 @@ class Ins:
 
             if not (0 <= reg <= 15):
                 raise ValueError()
-
         except ValueError:
             self.error(f"Invalid register: {repr(arg)}")
 
         if not zero and not reg:
-            self.error("Register must not be r0.")
+            self.error("Register must not be r0")
+        elif expect is not None and reg != expect:
+            self.error(f"Expected register r{expect}, got r{reg}")
 
         return reg
 
@@ -150,6 +151,8 @@ class Mul(Ins):
         super().__init__(*args, **kwargs)
 
         self.rz = self.parse_reg(zero=False)
+        self.parse_reg(expect=self.rz)
+
         self.ra = self.parse_reg(zero=False)
 
     def encode(self, labels):
