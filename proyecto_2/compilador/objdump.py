@@ -7,11 +7,21 @@ def reg(num, *, address=False):
 
     return expr
 
-loc = 0
-while half := sys.stdin.buffer.read(2):
-    insn = int.from_bytes(half, 'little')
+def out_line(loc, insn, disas, comment=''):
+    if comment:
+        comment = f'! {comment}'
 
-    add, comment, args = None, '', []
+    print(f'{loc:08x}: \t{insn:04x} \t{disas:<20}{comment}')
+
+loc = 0
+buffer = sys.stdin.buffer.read()
+pool_start = len(buffer)
+
+next_comment = ''
+while loc + 2 <= pool_start:
+    insn = int.from_bytes(buffer[loc:loc + 2], 'little')
+
+    add, comment, next_comment, args = None, next_comment, '', []
 
     if not (insn & 0x00f0):
         arg = (insn >> 4) | (insn & 0xf)
@@ -77,8 +87,20 @@ while half := sys.stdin.buffer.read(2):
         if add & 0x200:
             add -= 1 << 10
 
+        rd = insn & 0xf
         add <<= 1
-        args = [reg(insn), add]
+
+        target = loc + 2 + add
+        args = [reg(rd), add]
+
+        if not (target & 0b11) and loc < target <= len(buffer) - 4 and loc + 4 <= pool_start:
+            load_insn = rd << 7 | 0b101 << 4 | rd
+            if int.from_bytes(buffer[loc + 2:loc + 4], 'little') == load_insn:
+                comment = '...'
+                next_comment = f'imm {reg(rd)}, {hex(int.from_bytes(buffer[target:target + 4], "little"))}'
+
+                pool_start = min(pool_start, target)
+
     elif not (insn & 0x0010):
         match (insn >> 5) & 0b111:
             case 0b001:
@@ -144,14 +166,16 @@ while half := sys.stdin.buffer.read(2):
         op = 'sri' if insn & 0x0040 else 'sli'
         args = [reg(insn), reg(insn >> 7), insn >> 11]
 
-    if add is not None:
+    if add is not None and not comment:
         comment = f'{hex(loc + 2 + add)}'
 
-
-    if comment:
-        comment = f' ! {comment}'
-
     disas = op + ' ' + ', '.join(str(arg) for arg in args)
+    out_line(loc, insn, disas, comment)
 
-    print(f'{loc:08x}: \t{insn:04x} \t{disas:<20}{comment}')
     loc += 2
+
+while loc + 4 <= len(buffer):
+    word = int.from_bytes(buffer[loc:loc + 4], 'little')
+    out_line(loc, word & 0xffff, f'...')
+    out_line(loc, word >> 16, f'word {hex(word)}')
+    loc += 4
