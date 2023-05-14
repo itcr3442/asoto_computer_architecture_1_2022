@@ -151,7 +151,7 @@ nextcolumn:
     add r6, r0, r5                ! r6 = r5
     dec r10, 1                    ! nuevo y -= 1
     imm r7, 640                   
-    mul r10 r10, r7               ! Calcular offset de eje y
+    mul r10, r10, r7              ! Calcular offset de eje y
     add r6, r6, r10               ! Sumar offset + nuevo x
     sli r6, r6, 2                 ! Multiplicar por 4 para calcular posicion de memoria
     add r1, r1, r6                ! r1 = nueva posicion en VRAM 
