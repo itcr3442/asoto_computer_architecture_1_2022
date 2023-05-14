@@ -5,6 +5,42 @@ REG_STACK     = 14
 REG_LINK      = 15
 LABEL_CHARSET = string.ascii_letters
 
+REG_MAP = {
+    'r0':   0,
+    'zero': 0,
+    'r1':   1,
+    't0':   1,
+    'r2':   2,
+    't1':   2,
+    'r3':   3,
+    't2':   3,
+    'r4':   4,
+    't3':   4,
+    'r5':   5,
+    't4':   5,
+    'r6':   6,
+    't5':   6,
+    'r7':   7,
+    't6':   7,
+    'r8':   8,
+    's0':   8,
+    'r9':   9,
+    's1':   9,
+    'r10':  10,
+    'rr':   10,
+    's2':   10,
+    'r11':  11,
+    's3':   11,
+    'r12':  12,
+    'a0':   12,
+    'r13':  13,
+    'a1':   13,
+    'r14':  14,
+    'sp':   14,
+    'r15':  15,
+    'lr':   15,
+}
+
 
 class Ins:
     def __init__(self, *args, name, line, addr):
@@ -68,19 +104,9 @@ class Ins:
                 return None
 
         arg = arg.lower()
-
-        try:
-            if not arg or arg[0] != "r":
-                raise ValueError()
-
-            reg = int(arg[1:], 10)
-
-            if not (0 <= reg <= 15):
-                raise ValueError()
-        except ValueError:
+        if (reg := REG_MAP.get(arg)) is None:
             self.error(f"Invalid register: {repr(arg)}")
-
-        if not zero and not reg:
+        elif not zero and not reg:
             self.error("Register must not be r0")
         elif expect is not None and reg != expect:
             self.error(f"Expected register r{expect}, got r{reg}")

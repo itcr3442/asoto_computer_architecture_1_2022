@@ -1,7 +1,17 @@
 import sys
 
 def reg(num, *, address=False):
-    expr = f'r{num & 0xf}'
+    num = num & 0xf
+    match num:
+        case 0:
+            expr = 'zero'
+        case 14:
+            expr = 'sp'
+        case 15:
+            expr = 'lr'
+        case _:
+            expr = f'r{num}'
+
     if address:
         expr = f'[{expr}]'
 
@@ -52,8 +62,17 @@ while loc + 2 <= pool_start:
         rz = reg(insn >> 8)
         args = [rz, rz, reg(insn >> 12)]
     elif (insn & 0xf0ff) == 0x0040:
-        op = 'bin'
-        args = [reg(insn >> 8)]
+        rd = (insn >> 8) & 0xf
+        match rd:
+            case 0:
+                op = 'rst'
+                comment = 'bin zero'
+            case 15:
+                op = 'ret'
+                comment = 'bin lr'
+            case _:
+                op = 'bin'
+                args = [reg(rd)]
     elif (insn & 0xf0ff) == 0x00c0:
         op = 'sys'
         args = [insn >> 8]
