@@ -45,7 +45,7 @@ module core_branch
 	);
 
 	always_comb begin
-		unique case(hold_dec.branch.cond)
+		unique case(dec.branch.cond)
 			`COND_ALWAYS:
 				taken = 1;
 
