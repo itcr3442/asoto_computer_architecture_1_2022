@@ -109,7 +109,7 @@ nextcolumn:
     blk sin                       ! r2 = sin(2*pi*y/Lx)
     imm r1, 0x00000008
     ldw r3, [r1]                  ! r3 = Ax
-    mul r2, r3                    ! r2 = Ax*sin(2*pi*y/Lx)
+    mul r2, r2, r3                ! r2 = Ax*sin(2*pi*y/Lx)
     imm r1, 0x00000014
     ldw r3, [r1]                  ! r3 = x
     add r2, r2, r3                ! r2 = x + Ax*sin(2*pi*y/Lx)
@@ -128,7 +128,7 @@ nextcolumn:
     blk sin                       ! r2 = sin(2*pi*x/Ly)
     imm r1, 0x0000000c
     ldw r3, [r1]                  ! r3 = Ay
-    mul r2, r3                    ! r2 = Ay*sin(2*pi*x/Ly)
+    mul r2, r2, r3                ! r2 = Ay*sin(2*pi*x/Ly)
     imm r1, 0x00000010
     ldw r3, [r1]                  ! r3 = y
     add r2, r2, r3                ! r2 = y + Ay*sin(2*pi*x/Ly)
@@ -151,7 +151,7 @@ nextcolumn:
     add r6, r0, r5                ! r6 = r5
     dec r10, 1                    ! nuevo y -= 1
     imm r7, 640                   
-    mul r10, r7                   ! Calcular offset de eje y
+    mul r10 r10, r7               ! Calcular offset de eje y
     add r6, r6, r10               ! Sumar offset + nuevo x
     sli r6, r6, 2                 ! Multiplicar por 4 para calcular posicion de memoria
     add r1, r1, r6                ! r1 = nueva posicion en VRAM 
@@ -179,12 +179,12 @@ release:
 
 sin:
     imm r14, 360
-    mul r2, r14                   ! r2 = x en grados y multiplicado por 2
+    mul r2, r2, r14               ! r2 = x en grados y multiplicado por 2
     blk division                  ! r2 = r2/r4 = x/L
     add r3, r0, r2                ! r3 = r2 = 2*pi*x*180/(L*pi)
     imm r14, 180
     sub r2, r14, r3               ! r2 = (180 - x)
-    mul r2, r3                    ! r2 = x (180 - x)
+    mul r2, r2, r3                ! r2 = x (180 - x)
     imm r14, 40500
     sub r4, r14, r2               ! r4 = 40500 - x(180 - x)
     imm r14, 4
