@@ -5,8 +5,8 @@
 !   0c  Ay
 !   10  y
 !   14  x
-!   1c  pixeles
-!   20  VRAM
+!   1c  Contador memoria
+!   20  
 !   24  nuevo x
 !   28  divisor
 
@@ -52,12 +52,8 @@ start:
     stw [r1], r0                  ! Height (y): Cantidad de filas de la imagen
     inc r1, 4
     stw [r1], r0                  ! Width  (x): Cantidad de columnas de la imagen
-    imm r2, 0x00010000            ! r2 = direccion de los pixeles
     inc r1, 4
-    stw [r1], r2  
-    imm r2, 0x38000000            ! r2 = direccion a VRAM
-    inc r1, 4
-    stw [r1], r2  
+    stw [r1], r0                  ! Contador memoria
 
 mainloop:
 
@@ -147,20 +143,21 @@ nextcolumn:
     imm r1, 0x00000024 
     ldw r5, [r1]                  ! r5 = nuevo x
     imm r1, 0x0000001c 
-    ldw r4, [r1] 	              ! r4 = 0x00010000 (Pixeles)
-    ldw r3, [r4]                  ! r3 = pixel
-    inc r4, 4
-    stw [r1], r4                  ! Guardar posicion del siguiente pixel
-    imm r1, 0x00000020                 
-    ldw r4, [r1]                  ! r4 = 0x38000000 (VRAM)
+    ldw r4, [r1] 	              ! r4 = Contador memoria
+    imm r2, 0x00010000
+    add r2, r2, r4                ! Sumar offset al contador
+    ldw r3, [r2]                  ! r3 = pixel
+    inc r4, 4                     ! Aumentar contador de memoria
+    stw [r1], r4                  ! Guardar contador de memoria
+    imm r1, 0x38000000                 
     add r6, r0, r5                ! r6 = r5
     dec r10, 1                    ! nuevo y -= 1
     imm r7, 640                   
     mul r10, r7                   ! Calcular offset de eje y
     add r6, r6, r10               ! Sumar offset + nuevo x
     sli r6, r6, 2                 ! Multiplicar por 4 para calcular posicion de memoria
-    add r4, r4, r6                ! r4 = nueva posicion en VRAM 
-    stw [r4], r3                  ! Guardar pixel en su nueva posicion
+    add r1, r1, r6                ! r1 = nueva posicion en VRAM 
+    stw [r1], r3                  ! Guardar pixel en su nueva posicion
 
     bal nextcolumn
 
