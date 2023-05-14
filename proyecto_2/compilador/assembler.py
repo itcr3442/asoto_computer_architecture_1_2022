@@ -208,6 +208,8 @@ class Icond_ind_j(Ins):
                 self.ra = self.parse_reg()
             case 'ret':
                 self.ra = REG_LINK
+            case 'rst':
+                self.ra = 0
 
     def encode(self, labels):
         a = self.encode_reg(self.ra)
@@ -481,6 +483,7 @@ ISA = {
     "mul": Mul,
     "bin": Icond_ind_j,
     "ret": Icond_ind_j,
+    "rst": Icond_ind_j,
     "sys": Cont_space,
     "imm": Load_imm,
     "beq": Cond_j,
