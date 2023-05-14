@@ -11,17 +11,26 @@ loc = 0
 while half := sys.stdin.buffer.read(2):
     insn = int.from_bytes(half, 'little')
 
-    add, comment = None, ''
+    add, comment, args = None, '', []
 
     if not (insn & 0x00f0):
-        op = 'bal'
+        arg = (insn >> 4) | (insn & 0xf)
+        if arg & 0x800:
+            arg -= 1 << 12
 
-        add = (insn >> 4) | (insn & 0xf)
-        if add & 0x800:
-            add -= 1 << 12
+        match arg:
+            case -1:
+                op = 'hlt'
+                comment = 'bal .'
 
-        add <<= 1
-        args = [add]
+            case 0:
+                op = 'nop'
+
+            case _:
+                op = 'bal'
+
+                add = arg << 1
+                args = [add]
     elif (insn & 0xf0ff) == 0x0080:
         op = 'ext'
         args = [insn >> 8]
@@ -87,7 +96,42 @@ while half := sys.stdin.buffer.read(2):
             case 0b111:
                 op = 'sub'
 
-        args = [reg(insn), reg(insn >> 12), reg(insn >> 8)]
+        rd, ra, rb = insn & 0xf, (insn >> 12) & 0xf, (insn >> 8) & 0xf
+        nrd, nra, nrb = reg(rd), reg(ra), reg(rb)
+
+        mov, show_true = None, False
+        true_op = op
+        true_args = args = [nrd, nra, nrb]
+
+        match op:
+            case 'add' | 'orr' | 'xor':
+                if not ra:
+                    mov = rb
+                elif not rb:
+                    mov = ra
+
+            case 'and':
+                if not ra or not rb:
+                    mov = 0
+
+            case 'shl' | 'shl':
+                if not rb:
+                    mov = ra
+
+            case 'sub':
+                if not rb:
+                    mov = ra
+                elif not ra:
+                    op = 'neg'
+                    args = []
+
+        if mov is not None:
+            op = 'mov'
+            args = [nrd, reg(mov)]
+            show_true = True
+
+        if show_true:
+            comment = f'{true_op} {nrd}, {nra}, {nrb}'
     elif (insn & 0xf830) == 0x0010:
         load = bool(insn & 0x0040)
         op = 'ldw' if load else 'stw'
@@ -103,8 +147,11 @@ while half := sys.stdin.buffer.read(2):
     if add is not None:
         comment = f'{hex(loc + 2 + add)}'
 
-    if comment:
-        comment = f'  ! {comment}'
 
-    print(f'{loc:08x}:\t{insn:04x}\t{op} {", ".join(str(arg) for arg in args)}{comment}')
+    if comment:
+        comment = f' ! {comment}'
+
+    disas = op + ' ' + ', '.join(str(arg) for arg in args)
+
+    print(f'{loc:08x}: \t{insn:04x} \t{disas:<20}{comment}')
     loc += 2
