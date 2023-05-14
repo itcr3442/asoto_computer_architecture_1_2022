@@ -49,7 +49,8 @@ while loc + 2 <= pool_start:
         args = [(insn >> 12) + 16]
     elif (insn & 0x00ff) == 0x0080:
         op = 'mul'
-        args = [reg(insn >> 8), reg(insn >> 12)]
+        rz = reg(insn >> 8)
+        args = [rz, rz, reg(insn >> 12)]
     elif (insn & 0xf0ff) == 0x0040:
         op = 'bin'
         args = [reg(insn >> 8)]
