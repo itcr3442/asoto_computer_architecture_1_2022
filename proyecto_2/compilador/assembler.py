@@ -375,6 +375,30 @@ class Alu_reg_imm5(Ins):
         return (i, a, s, "01", d)
 
 
+class Raw(Ins):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.imm = self.parse_imm()
+
+        match self.name:
+            case "word":
+                self.size = 2
+            case "hword":
+                self.size = 1
+
+    def length(self):
+        return self.size
+
+    def encode(self, labels):
+        match self.size:
+            case 1:
+                return (self.encode_unsigned(self.imm, 16),)
+            case 2:
+                lo = self.encode_unsigned(self.imm & 0xffff, 16)
+                hi = self.encode_unsigned(self.imm >> 16, 16)
+                return [(lo,), (hi,)]
+
+
 ISA = {
     "bal": Icond_rel_j,
     "hlt": Icond_rel_j,
@@ -405,6 +429,8 @@ ISA = {
     "neg": Alu_reg_reg,
     "inc": Alu_reg_inc_dec_imm5,
     "dec": Alu_reg_inc_dec_imm5,
+    "word": Raw,
+    "hword": Raw,
 }
 
 
