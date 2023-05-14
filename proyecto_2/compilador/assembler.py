@@ -1,9 +1,8 @@
-import sys
-import string
+import ast, sys, string
 
 REG_STACK     = 14
 REG_LINK      = 15
-LABEL_CHARSET = string.ascii_letters
+LABEL_CHARSET = string.ascii_letters + '_'
 
 REG_MAP = {
     'r0':   0,
@@ -84,13 +83,27 @@ class Ins:
         return self.parse_reg(arg=arg[1:-1], zero=zero)
 
     def parse_imm(self, *, zero=True):
-        arg = self.next()
+        arg, bad = self.next(), False
+
         try:
             imm = int(arg, 0)
         except ValueError:
-            self.error(f"Invalid immediate value: {repr(arg)}")
+            bad = True
 
-        if not zero and not imm:
+        if bad:
+            try:
+                imm = ast.literal_eval(arg)
+                if type(imm) is str:
+                    imm = imm.encode('ascii')
+                    if len(imm) == 1:
+                        imm = imm[0]
+                        bad = False
+            except:
+                pass
+
+        if bad:
+            self.error(f"Invalid immediate value: {repr(arg)}")
+        elif not zero and not imm:
             self.error("Immediate value must not be 0.")
         elif not (-(1 << 31) <= imm <= (1 << 32) - 1):
             self.error(f"Immediate exceeds 32 bits: {imm}")
