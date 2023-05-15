@@ -1,3 +1,5 @@
+`include "types.sv"
+
 module conspiracion
 (
 	input  wire        clk_clk,
@@ -44,20 +46,38 @@ module conspiracion
 	output wire [7:0]  vga_dac_b
 );
 
-	logic button, reset_reset_n, cpu_clk, cpu_rst_n, cpu_halt, irq;
+	logic button, reset_reset_n, cpu_clk, cpu_rst_n, cpu_halt, irq,
+	      fetch_ready, insn_ready, data_ready, fetch_start, insn_start, data_start, data_write;
 
-	logic insn_ready, data_ready, insn_start, data_start, data_write;
-	logic[3:0] data_data_be;
-	logic[27:0] insn_addr;
-	logic[29:0] data_addr;
-	logic[31:0] data_data_rd, data_data_wr;
-	logic[127:0] insn_data_rd;
+	ptr fetch_addr, data_addr;
+	word fetch_data_rd, data_data_rd, data_data_wr;
+	nibble data_data_be;
+
+	mar810 core
+	(
+		.clk(cpu_clk),
+		.rst_n(cpu_rst_n),
+		.halt(cpu_halt),
+		.halted(cpu_halted),
+		.*
+	);
 
 `ifdef VERILATOR
 	assign cpu_halt = halt;
 	assign reset_reset_n = rst_n;
 	assign button = pio_buttons;
+
+	ptr insn_addr;
+	word insn_data_rd;
+
+	assign insn_addr = fetch_addr;
+	assign insn_start = fetch_start;
+	assign fetch_ready = insn_ready;
+	assign fetch_data_rd = insn_data_rd;
 `else
+	qptr insn_addr;
+	qword insn_data_rd;
+
 	debounce reset_debounce
 	(
 		.clk(clk_clk),
@@ -78,16 +98,14 @@ module conspiracion
 		.dirty(pio_buttons),
 		.clean(button)
 	);
-`endif
 
-	mar810 core
+	cache_l1i l1i
 	(
 		.clk(cpu_clk),
 		.rst_n(cpu_rst_n),
-		.halt(cpu_halt),
-		.halted(cpu_halted),
 		.*
 	);
+`endif
 
 	platform plat
 	(

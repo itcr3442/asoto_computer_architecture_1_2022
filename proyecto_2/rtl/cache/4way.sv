@@ -5,7 +5,7 @@
 // _m_  means data exchange with memory    //
 // Replacement policy is LRU (8bit)        //
 
-module core_cache_4way(clk,
+module cache_4way(clk,
                        rst_n,
                        i_p_addr,
                        i_p_byte_en,
@@ -101,9 +101,9 @@ module core_cache_4way(clk,
     end
 `endif
 
-    core_cache_sram #(.width(8), .widthad(cache_entry)) ram_hot(clk, addr[cache_entry-1:0], w_cm, w_cm_data, addr[cache_entry-1:0], r_cm_data);
+    cache_sram #(.width(8), .widthad(cache_entry)) ram_hot(clk, addr[cache_entry-1:0], w_cm, w_cm_data, addr[cache_entry-1:0], r_cm_data);
 
-    core_cache_set #(.cache_entry(cache_entry))
+    cache_set #(.cache_entry(cache_entry))
     set0(.clk(clk),
          .rst_n(rst_n),
          .entry(addr[cache_entry-1:0]),
@@ -120,7 +120,7 @@ module core_cache_4way(clk,
          .valid(valid[0]),
          .read_miss(read_buf));
 
-    core_cache_set #(.cache_entry(cache_entry))
+    cache_set #(.cache_entry(cache_entry))
     set1(.clk(clk),
          .rst_n(rst_n),
          .entry(addr[cache_entry-1:0]),
@@ -137,7 +137,7 @@ module core_cache_4way(clk,
          .valid(valid[1]),
          .read_miss(read_buf));
 
-    core_cache_set #(.cache_entry(cache_entry))
+    cache_set #(.cache_entry(cache_entry))
     set2(.clk(clk),
          .rst_n(rst_n),
          .entry(addr[cache_entry-1:0]),
@@ -154,7 +154,7 @@ module core_cache_4way(clk,
          .valid(valid[2]),
          .read_miss(read_buf));
 
-    core_cache_set #(.cache_entry(cache_entry))
+    cache_set #(.cache_entry(cache_entry))
     set3(.clk(clk),
          .rst_n(rst_n),
          .entry(addr[cache_entry-1:0]),
