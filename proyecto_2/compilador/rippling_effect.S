@@ -10,14 +10,40 @@
 !   24  nuevo x
 !   28  divisor
 
+reset:
+
 ! Stack pointer
 imm sp, 0x00002000
-
-reset:
 
 !equ START_BUTTON, 0x30050000       Dirección de memoria del botón
 !equ START, 0x00010000              Dirección de memoria de los pixeles
 !equ VRAM, 0x38000000 
+
+imm t0, 0x00002000
+mov t1, zero
+imm t2, 640
+x_sin_loop:
+inc t1, 1
+mov a0, t1
+imm a1, 75
+blk sin
+stw [t0], o0
+inc t0, 4
+blt t1, t2, x_sin_loop
+
+! Esto duplica trabajo pero es un safeback durante la
+! defensa por si al profe se le ocurre que Lx != Ly
+imm t0, 0x00003000
+mov t1, zero
+imm t2, 480
+y_sin_loop:
+inc t1, 1
+mov a0, t1
+imm a1, 75
+blk sin
+stw [t0], o0
+inc t0, 4
+blt t1, t2, y_sin_loop
 
 imm r1, 0x00010000                ! r1 = direccion de los pixeles
 imm r2, 0x38000000                ! r2 = direccion a VRAM
@@ -107,9 +133,12 @@ nextcolumn:
 ! blk dbg_char   ! se pierde a0, a1, s0, s1, o0, o1
     imm r1, 0x00001010            ! cargar dirección de y
     ldw a0, [r1]                  ! a0 = y
-    imm r1, 0x00001000            ! cargar dirección de Lx
+    imm r1, 0x00002000
     ldw a1, [r1]                  ! r4 = Lx
-    blk sin                       ! o0 = sin(2*pi*y/Lx)
+	dec a1, 1
+	sli a1, a1, 2
+	add a1, a1, r1
+	ldw r2, [a1]
 !psh a0, a1, s0, s1, o0, o1
 !mov a0, o0                        ! print  \
 !blk dbg_word                      ! se pierde a0, a1, s0, s1, o0, o1
@@ -149,10 +178,12 @@ nextcolumn:
 !======= Cálculo de nuevo y =======!
     imm r1, 0x00001014
     ldw a0, [r1]                  ! r2 = x
-    imm r1, 0x00001004
-    ldw a1, [r1]                  ! r4 = Ly
-    blk sin                       ! o0 = sin(2*pi*x/Ly)
-    mov r2, o0
+    imm r1, 0x00003000
+	dec a0, 1
+	sli a0, a0, 2
+	add a1, a0, a1
+	ldw r2, [a1]
+
     imm r1, 0x0000100c
     ldw r3, [r1]                  ! r3 = Ay
     mul r2, r2, r3                ! r2 = Ay*sin(2*pi*x/Ly)
@@ -352,16 +383,16 @@ divdone:
 
 ! o0 = round(a0)
 round:
-    imm s0, 128                 ! Máscara de bit 8
-    add s1, r0, a0             ! s1 = r2
+    imm s0, 128               ! Máscara de bit 8
+    add s1, r0, a0            ! s1 = r2
     and s1, s1, s0            ! Aplicar máscara a s1
     sri s1, s1, 7             ! Obtener bit 8
-    imm s0, 1                  ! s0 = 1
-    sri o0, a0, 8               ! Quitar decimales
-    bne s0, s1, ready         ! Si el bit 8 es 0
+    imm s0, 1                 ! s0 = 1
+    sri o0, a0, 8             ! Quitar decimales
+    bne s0, s1, round_ready   ! Si el bit 8 es 0
     inc o0, 1 
-    ready:
-        ret
+round_ready:
+    ret
 
 dbg_word:
 	psh lr, t1
