@@ -165,7 +165,8 @@ while loc + 2 <= pool_start:
                     mov = ra
                 elif not ra:
                     op = 'neg'
-                    args = []
+                    args = [nrd, nrb]
+                    show_true = True
 
         if mov is not None:
             op = 'mov'

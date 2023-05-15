@@ -24,8 +24,8 @@ mov t1, zero
 imm t2, 640
 x_sin_loop:
 inc t1, 1
-mov a0, t1
 imm a1, 75
+mov a0, t1
 blk sin
 stw [t0], o0
 inc t0, 4
@@ -219,25 +219,39 @@ clamp_decrease:
 
 
                
-! sin(x) =  4x (180 - x) / [40500 - x (180 - x)]
+! sin(x) ~ 4x (180 - x) / [40500 - x (180 - x)] para 0 <= x <= 180 en grados
 ! rr = sin(2*pi*a0/a1) = sin(x/L)
 sin:
-    psh lr, t0, t1
-    mov t0, a0
-    mov t1, a1
-    imm a0, 360
-    mul a0, a0, t0               ! a0 = 360 * pos
-    mov a1, t1                  ! setup args for divition
-    blk division                  ! o0 = a0/a1 ^ o1 = a0%a1
-    imm s0, 180
-    sub s0, s0, o0               ! r2 = (180 - x)
-    mul s0, s0, o0               ! r2 = x (180 - x)
-    imm s1, 40500
-    sub a1, s1, s0               ! r4 = 40500 - x(180 - x)
-    sli a0, s0, 10                ! r2 = [4x (180 - x)] << 8
-    blk division                  ! div (r2<<8)/r4
-    pop lr, t0, t1
-    ret
+    psh lr, t0
+    imm s0, 360
+    mul a0, a0, s0               ! a0 = 360 * pos
+    blk division                 ! o0 = a0/a1 ^ o1 = a0%a1
+	mov t0, o0
+	mov a0, o0
+	imm a1, 180
+	blk division
+
+	mov s0, zero
+	imm s1, 1
+    imm a0, 180
+	and s1, o0, s1
+	beq s0, s1, sin_post_fixup
+	sub o1, a0, o1
+sin_post_fixup:
+
+    sub a0, a0, o1               ! r2 = (180 - x)
+    mul a0, a0, o1               ! r2 = x (180 - x)
+    imm s2, 40500
+    sub a1, s2, a0               ! r4 = 40500 - x(180 - x)
+    sli a0, a0, 10                ! r2 = [4x (180 - x)] << 8
+	mov t0, s1
+	blk division 
+
+	beq zero, t0, sin_post_neg
+	neg o0, o0
+sin_post_neg:
+    pop lr, t0
+	ret
 
 ! o0 = a0/a1
 ! o1 = a0%a1

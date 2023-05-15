@@ -351,7 +351,7 @@ class Alu_reg_reg(Ins):
                 self.o = "101"
             case "add" | "mov":
                 self.o = "110"
-            case "sub":
+            case "sub" | "neg":
                 self.o = "111"
 
     def encode(self, labels):
