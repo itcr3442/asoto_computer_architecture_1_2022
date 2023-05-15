@@ -21,8 +21,12 @@ module core_branch
 	logic next_stall;
 
 	hword raw_in, raw_hold;
+	sword sa, sb;
 	logic hold_start, taken;
 	insn_decode hold_dec;
+
+	assign sa = a;
+	assign sb = b;
 
 	assign stall = next_stall || branch;
 	assign raw_mask = raw_in | raw_hold;
@@ -50,7 +54,7 @@ module core_branch
 				taken = 1;
 
 			`COND_LT:
-				taken = a < b;
+				taken = sa < sb;
 
 			`COND_EQ:
 				taken = a == b;
