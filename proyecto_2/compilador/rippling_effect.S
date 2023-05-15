@@ -10,6 +10,8 @@
 !   24  nuevo x
 !   28  divisor
 
+! Stack pointer
+imm sp, 0x00002000
 
 reset:
 
@@ -101,38 +103,46 @@ nextcolumn:
     beq r2, r3, rippling          ! Si x llegó al máximo de columnas
 
 !======= Cálculo de nuevo x =======!
+imm a0, 'x'    ! print
+blk dbg_char    ! print
     imm r1, 0x00001010
-    ldw r2, [r1]                  ! r2 = y
+    ldw a0, [r1]                  ! r2 = y
     imm r1, 0x00001000
-    ldw r4, [r1]                  ! r4 = Lx
-    blk sin                       ! r2 = sin(2*pi*y/Lx)
+    ldw a1, [r1]                  ! r4 = Lx
+    blk sin                       ! o0 = sin(2*pi*y/Lx)
+    mov r2, o0
     imm r1, 0x00001008
     ldw r3, [r1]                  ! r3 = Ax
     mul r2, r2, r3                ! r2 = Ax*sin(2*pi*y/Lx)
     imm r1, 0x00001014
     ldw r3, [r1]                  ! r3 = x
-    add r2, r2, r3                ! r2 = x + Ax*sin(2*pi*y/Lx)
+    add a0, r2, r3                ! r2 = x + Ax*sin(2*pi*y/Lx)
     blk round                     ! r2 = round(r2)
-    imm r4, 640                   ! r4 = 640
+    mov a0, o0 
+    imm a1, 640                   ! r4 = 640
     blk division                  ! r10 = mod(r2, r4)
+    mov r10, o1
     imm r1, 0x00001024 
     stw [r1], r10                 ! r10 = Nuevo valor de x
 
 !======= Cálculo de nuevo y =======!
     imm r1, 0x00001014
-    ldw r2, [r1]                  ! r2 = x
+    ldw a0, [r1]                  ! r2 = x
     imm r1, 0x00001004
-    ldw r4, [r1]                  ! r4 = Ly
-    blk sin                       ! r2 = sin(2*pi*x/Ly)
+    ldw a1, [r1]                  ! r4 = Ly
+    blk sin                       ! o0 = sin(2*pi*x/Ly)
+    mov r2, o0
     imm r1, 0x0000100c
     ldw r3, [r1]                  ! r3 = Ay
     mul r2, r2, r3                ! r2 = Ay*sin(2*pi*x/Ly)
     imm r1, 0x00001010
     ldw r3, [r1]                  ! r3 = y
-    add r2, r2, r3                ! r2 = y + Ay*sin(2*pi*x/Ly)
+    add a0, r2, r3                ! r2 = y + Ay*sin(2*pi*x/Ly)
     blk round                     ! r2 = round(r2)
-    imm r4, 480                   ! r4 = 480
+    mov a0, o0
+    imm a1, 480                   ! r4 = 480
     blk division                  ! r10 = mod(r2, r4) (Nuevo valor de y)
+    mov r10, o1
     
 !======= Almacenar en VRAM =======!
     imm r1, 0x00001024 
@@ -158,122 +168,174 @@ nextcolumn:
 
                
 ! sin(x) =  4x (180 - x) / [40500 - x (180 - x)]
-! r2 = sin(r2/r4) = sin(x/L)
-
+! rr = sin(2*pi*a0/a1) = sin(x/L)
 sin:
-imm r1, 0x30000000             ! print
-imm r13, 0x52                  ! print(S)
-stw [r1], r13                  ! print
-    imm r14, 360
-    mul r2, r2, r14               ! r2 = x en grados y multiplicado por 2
-    blk division                  ! r2 = r2/r4 = x/L
-    add r3, r0, r2                ! r3 = r2 = 2*pi*x*180/(L*pi)
-    imm r14, 180
-    sub r2, r14, r3               ! r2 = (180 - x)
-    mul r2, r2, r3                ! r2 = x (180 - x)
-    imm r14, 40500
-    sub r4, r14, r2               ! r4 = 40500 - x(180 - x)
-    imm r14, 4
-    sli r2, r2, 10                ! r2 = [4x (180 - x)] << 8
+    psh lr, t0, t1
+    mov t0, a0
+    mov t1, a1
+imm a0, 's'    ! print
+blk dbg_char   ! print
+    imm a0, 360
+    mul a0, a0, t0               ! a0 = 360 * pos
+    mov a1, t1                  ! setup args for divition
+    blk division                  ! o0 = a0/a1 ^ o1 = a0%a1
+    imm s0, 180
+    sub s0, s0, o0               ! r2 = (180 - x)
+    mul s0, s0, o0               ! r2 = x (180 - x)
+    imm s1, 40500
+    sub a1, s1, s0               ! r4 = 40500 - x(180 - x)
+    sli a0, s0, 10                ! r2 = [4x (180 - x)] << 8
     blk division                  ! div (r2<<8)/r4
+    pop lr, t0, t1
     ret
 
 
-! r2  = r2/r4
-! r10 = r2%r4
+! o0 = a0/a1
+! o1 = a0%a1
 division:
-    xor r3, r3, r3                ! r3 = 0
-    beq r2, r3, diveqzero         ! Si dividendo es cero => q = 0
-    xor r5, r5, r5                ! r5 = 0
-    beq r4, r5, divbyzero         ! Si el divisor es cero => ?
-    add r3, r0, r4                ! r3 = r4
-    blt r2, r3, divtriv
-    imm r1, 0x00001028
-    stw [r1], r4
+    psh lr, t0, t1, t2, t3, t5, t6
+    mov t0, a0
+    mov t1, a1
+imm a0, 'd'    ! print
+blk dbg_char   ! print
 
-    add r4, r0, r2                ! r4 = r2
-    imm r5, 1                     ! Contador
-    beq r4, r5, logdone           ! Si ya es 1
+    mov s0, t0                      ! s0 = t0
+    mov s1, zero                    ! s1 = 0
+    bne s0, s1, divnezero           ! Si dividendo es cero => q = 0
+    diveqzero:
+        mov o0, zero            ! El cociente es cero
+        mov o1, zero            ! El residuo es cero
+        bal divdone
+    divnezero:
+    mov s0, t1                  ! s0 = t1
+    beq s0, s1, diveqzero       ! Si el divisor es cero => ?
+    mov s0, t0                  ! s0 = t0
+    mov s1, t1                  ! s1 = t1
+    blt s0, s1, divtriv         ! si t0 < t1, se hace division trivial
+
+    mov s0, t0                    ! s0 = t0
+    imm s1, 1                     ! constante s1 = 1 
+    imm t2, 1                     ! Cantidad de bits
+    beq s0, s1, logdone           ! Si ya es 1
     logloop:
-        sri r4, r4, 1             ! Shift right
-        inc r5, 1                 ! Incrementar contador
-        bne r4, r5, logloop       ! Verificar que no sea 1
-    logdone:                      ! r5 = cantidad de bits
-    add r3, r0, r5                ! r3 = r5
-    dec r3, 1                     ! r3 = cantidad de bits - 1
+imm a0, '6'    ! print
+blk dbg_char   ! print
+        sri s0, s0, 1             ! Shift right
+        inc t2, 1                 ! Incrementar contador
+        bne s0, s1, logloop       ! Verificar que no sea 1
+    logdone:                      ! t2 = cantidad de bits
+imm a0, 'l'    ! print
+blk dbg_char   ! print
+    mov s0, t2
+    dec s0, 1                     ! s0 = cantidad de bits - 1
 
-    imm r4, 1                     ! r4 guarda la máscara
-    xor r7, r7, r7                ! r7 = 0
-    add r6, r0, r3                ! r6 = r3
+    mov a1, zero ! setup para \   ! a1 = 0
+    mov a0, s0   ! comparar       ! a0 = s0
     generatemask:
-        beq r6, r7, continue   
-        sli r4, r4, 1             ! r4 << 1
-        inc r4, 1                 ! Poner 1 en LSB
-        dec r6, 1                 ! Decrementar el contador
+        beq a0, a1, continuediv  
+        sli s1, s1, 1             ! s1 << 1
+        inc s1, 1                 ! Poner 1 en LSB
+        dec a0, 1                 ! Decrementar el contador
         bal generatemask
-
-    continue:
-    add r6, r0, r5                 ! r6 = r5
-    imm r1, 0x00001028
-    ldw r11, [r1]                  ! r11 = divisor
-    xor r10, r10, r10
-    imm r8, 1
     
+continuediv:
+    mov a0, t2
+    mov a1, zero
+    imm t6, 1
+    imm o1, 0
+    mov o0, t0
+
 ! Reservados: 
-!   r2: dividendo
-!   r3: n-1
-!   r4: máscara
-!   r6: n
-!   r7: 0
-!   r8: 1
-!   r11: divisor
+!  t0: dividendo
+!  s0: n-1 (cantidad de bits - 1)
+!  s1: máscara
+!  a0: n (cantidad de bits)
+!  a1: 0
+!  t1: divisor
+!  t6 = 1
+!  o1 = 0
+!  o0 = t0
 
 divloop:
-    beq r6, r7, divdone  
-    dec r6, 1                     ! Decrementar contador
-    shr r5, r5, r3                ! r5 = MSB de Q
-    sli r10, r10, 1               ! A << 1 (r10 = A)
-    add r10, r10, r5              ! Colocar LSB de A
-    sli r2, r2, 1                 ! Q << 1
-    and r2, r2, r4                ! Aplicar máscara 
-    add r9, r0, r10               ! Guardar A en r9
-    sub r9, r9, r11               ! r9 = A-M 
-    add r12, r0, r9               ! Guardar nuevo A en r12
-    and r9, r9, r4                ! Aplicar máscara
-    shr r9, r9, r3                ! r9 = MSB de A
-    beq r8, r9, divloop           ! Si r9 == 1, no hacer nada
-    inc r2, 1                     ! Sino agregar 1 al final de Q
-    add r10, r0, r12
+    beq a0, a1, divdone           ! si la cantidad de bits es 0, terminar
+    dec a0, 1                     ! Decrementar contador
+    shr t3, t0, s0                ! t3 = MSB de Q
+    sli o1, o1, 1                 ! A << 1 (o1 = A) 
+    add o1, o1, t3                ! Colocar LSB de A
+    sli o0, o0, 1                 ! Q << 1
+    and o0, o0, s1                ! Aplicar máscara 
+    mov t5, o1                    ! Guardar A en t5
+    sub t5, t5, t1                ! t5 = A-M 
+    mov t3, t5                    ! Guardar nuevo A en t3
+    and t5, t5, s1                ! Aplicar máscara
+    shr t5, t5, s0                ! t5 = MSB de A
+    beq t5, t6, divloop           ! Si t5 == 1, no hacer nada
+    inc o0, 1                     ! Sino agregar 1 al final de Q
+    mov o1, t3
     bal divloop
 
 divtriv:
-    add r10, r0, r2               ! El residuo es el dividendo
-    add r2, r0, r0                ! El cociente es cero
-    bal divdone
-
-divbyzero:
-    ! Error
-
-diveqzero:
-    add r10, r0, r0               ! El residuo es cero
-    add r2, r0, r0                ! El cociente es cero
-    bal divdone
+    mov o1, t0                  ! El residuo es el dividendo
+    mov o0, zero                ! El cociente es cero
 
 divdone:
-    ! r2: Cociente
-    ! r10: Residuo
+    ! o0: Cociente
+    ! o1: Residuo
+imm a0, 'e'    ! print
+blk dbg_char   ! print
+    pop lr, t0, t1, t2, t3, t5, t6
     ret
 
 
-! r2 = round(r2)
+! o0 = round(a0)
 round:
-    imm r1, 128                 ! Máscara de bit 8
-    add r13, r0, r2             ! r13 = r2
-    and r13, r13, r1            ! Aplicar máscara a r13
-    sri r13, r13, 7             ! Obtener bit 8
-    imm r12, 1                  ! r12 = 1
-    sri r2, r2, 8               ! Quitar decimales
-    bne r12, r13, ready         ! Si el bit 8 es 0
-    inc r2, 1 
+    imm s0, 128                 ! Máscara de bit 8
+    add s1, r0, a0             ! s1 = r2
+    and s1, s1, s0            ! Aplicar máscara a s1
+    sri s1, s1, 7             ! Obtener bit 8
+    imm s0, 1                  ! s0 = 1
+    sri o0, a0, 8               ! Quitar decimales
+    bne s0, s1, ready         ! Si el bit 8 es 0
+    inc o0, 1 
     ready:
         ret
+
+dbg_word:
+	psh lr, t1
+	mov t1, a0
+	imm a0, '0'
+	blk dbg_char
+	imm a0, 'x'
+	blk dbg_char
+	psh t0, t2
+	imm t0, 28
+	imm t2, 0b1111
+dbg_word_loop:
+	shr s0, t1, t0
+	and s0, s0, t2
+	imm a0, '0'
+	imm s1, 10
+	add a0, a0, s0
+	blt s0, s1, dbg_word_digit
+	imm a1, 39 ! 'a' - '0' - 10
+	add a0, a0, a1
+dbg_word_digit:
+	blk dbg_char
+	beq zero, t0, dbg_word_exit
+	dec t0, 4
+	bal dbg_word_loop
+dbg_word_exit:
+	pop lr, t1, t0, t2
+	ret
+
+dbg_char:
+	imm s0, 0x30000000
+	mov s1, s0
+	inc s1, 4
+	mov s2, zero
+dbg_char_wait_tx:
+	ldw s3, [s1]
+	sri s3, s3, 16
+	beq s2, s3, dbg_char_wait_tx
+	stw [s0], a0
+	ret
