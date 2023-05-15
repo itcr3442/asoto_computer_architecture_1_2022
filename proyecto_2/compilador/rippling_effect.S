@@ -121,7 +121,7 @@ nextcolumn:
     imm r1, 0x00001014            ! cargar dirección de memoria de x
     ldw r3, [r1]                  ! r3 = x
 !psh a0, a1, s0, s1, o0, o1
-!mov a0, r2                        ! print  \
+!mov a0, r3                        ! print  \
 !blk dbg_word                      ! se pierde a0, a1, s0, s1, o0, o1
 !pop a0, a1, s0, s1, o0, o1
     sli r3, r3, 8
@@ -172,6 +172,10 @@ nextcolumn:
 !psh a0, a1, s0, s1, o0, o1
 !mov a0, r10                       ! print  \
 !blk dbg_word                      ! se pierde a0, a1, s0, s1, o0, o1
+!pop a0, a1, s0, s1, o0, o1
+!psh a0, a1, s0, s1, o0, o1
+!imm a0, '-'                       ! print  \
+!blk dbg_char                      ! se pierde a0, a1, s0, s1, o0, o1
 !pop a0, a1, s0, s1, o0, o1
 
 !======= Almacenar en VRAM =======!
