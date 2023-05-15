@@ -46,4 +46,5 @@ dbg_char_wait_tx:
 	sri s3, s3, 16
 	beq s2, s3, dbg_char_wait_tx
 	stw [s0], a0
+	hlt
 	ret

@@ -8,15 +8,15 @@ module mar810
 	input  logic      irq,
 	                  halt,
 
-	input  logic      insn_ready,
+	input  logic      fetch_ready,
 					  data_ready,
-	input  qword      insn_data_rd,
-	input  word		  data_data_rd,
+	input  word       fetch_data_rd,
+	                  data_data_rd,
 
 	output word       data_data_wr,
-	output qptr       insn_addr,
-	output ptr        data_addr,
-	output logic      insn_start,
+	output ptr        fetch_addr,
+	                  data_addr,
+	output logic      fetch_start,
 					  data_start,
 					  data_write,
 	output logic[3:0] data_data_be,
@@ -24,19 +24,9 @@ module mar810
 	output logic      halted
 );
 
-	word fetch_data_rd;
-	logic fetch_ready;
-
-	core_cache_l1i l1i
-	(
-		.*
-	);
-
-
-	ptr fetch_addr;
 	hptr hi_insn_pc, lo_insn_pc;
 	hword hi_insn, lo_insn;
-	logic flush, fetch_start;
+	logic flush;
 
 	core_fetch #(.PREFETCH_ORDER(2)) fetch
 	(

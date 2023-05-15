@@ -202,6 +202,10 @@ set_location_assignment PIN_AA13 -to vram_wire_we_n
 set_global_assignment -name SEARCH_PATH rtl
 
 
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/cache/l1i.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/cache/4way.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/cache/set.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/cache/sram.sv
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/core/decode/isa.sv
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/core/decode/decode.sv
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/core/dispatch/hazards.sv
@@ -219,10 +223,6 @@ set_global_assignment -name SYSTEMVERILOG_FILE rtl/core/mar810.sv
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/core/writeback.sv
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/core/branch.sv
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/core/ldst.sv
-set_global_assignment -name SYSTEMVERILOG_FILE rtl/core/cache/l1i.sv
-set_global_assignment -name SYSTEMVERILOG_FILE rtl/core/cache/4way.sv
-set_global_assignment -name SYSTEMVERILOG_FILE rtl/core/cache/set.sv
-set_global_assignment -name SYSTEMVERILOG_FILE rtl/core/cache/sram.sv
 
 set_global_assignment -name QSYS_FILE platform.qsys
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/top/conspiracion.sv

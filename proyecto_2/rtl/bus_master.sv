@@ -1,39 +1,53 @@
+`include "types.sv"
+
 module bus_master
 (
-	input  logic        clk,
-	                    rst_n,
+	input  logic  clk,
+	              rst_n,
 
-	output logic        cpu_clk,
-	                    cpu_rst_n,
-	                    irq,
+	output logic  cpu_clk,
+	              cpu_rst_n,
+	              irq,
 
-	output logic        insn_ready,
-						data_ready,
-	output logic[127:0] insn_data_rd,
-	output logic[31:0]	data_data_rd,
+	output logic  insn_ready,
+	              data_ready,
+`ifdef VERILATOR
+	output word   insn_data_rd,
+`else
+	output qword  insn_data_rd,
+`endif
+	output word   data_data_rd,
 
-	input  logic[31:0]  data_data_wr,
-	input  logic[27:0]  insn_addr,
-	input  logic[29:0]	data_addr,
-	input  logic        insn_start,
-						data_start,
-						data_write,
-	input  logic[3:0]   data_data_be,
+	input  word   data_data_wr,
+`ifdef VERILATOR
+	input  ptr    insn_addr,
+`else
+	input  qptr   insn_addr,
+`endif
+	input  ptr    data_addr,
+	input  logic  insn_start,
+	              data_start,
+	              data_write,
+	input  nibble data_data_be,
 
-	output logic[31:0]  avl_data_address,
-	output logic        avl_data_read,
-	                    avl_data_write,
-	input  logic[31:0]  avl_data_readdata,
-	output logic[31:0]  avl_data_writedata,
-	input  logic        avl_data_waitrequest,
-	output logic[3:0]   avl_data_byteenable,
+	output word   avl_data_address,
+	output logic  avl_data_read,
+	              avl_data_write,
+	input  word   avl_data_readdata,
+	output word   avl_data_writedata,
+	input  logic  avl_data_waitrequest,
+	output nibble avl_data_byteenable,
 
-	output logic[31:0]  avl_insn_address,
-	output logic        avl_insn_read,
-	input  logic[127:0] avl_insn_readdata,
-	input  logic        avl_insn_waitrequest,
+	output word   avl_insn_address,
+	output logic  avl_insn_read,
+`ifdef VERILATOR
+	input  word   avl_insn_readdata,
+`else
+	input  qword  avl_insn_readdata,
+`endif
+	input  logic  avl_insn_waitrequest,
 
-	input  logic        avl_irq
+	input  logic  avl_irq
 );
 
 	enum int unsigned
@@ -97,7 +111,7 @@ module bus_master
 			if((i_state == IDLE || !avl_insn_waitrequest) && insn_start) begin
 				i_state <= WAIT;
 				avl_insn_read <= 1;
-				avl_insn_address <= {insn_addr, 4'b0000};
+				avl_insn_address <= {insn_addr, {($bits(avl_insn_address) - $bits(insn_addr)){1'b0}}};
 			end else if(i_state == WAIT && !avl_insn_waitrequest) begin
 				i_state <= IDLE;
 				avl_insn_read <= 0;

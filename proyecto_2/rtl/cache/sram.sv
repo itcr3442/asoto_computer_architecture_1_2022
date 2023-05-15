@@ -26,7 +26,7 @@
 
 //!! TODO: rst
 
-module core_cache_sram
+module cache_sram
   #(parameter width     = 1,
     parameter widthad   = 1
     )

@@ -11,8 +11,8 @@ module platform
 	output wire         master_0_core_cpu_clk,               //                             .cpu_clk
 	output wire         master_0_core_cpu_rst_n,             //                             .cpu_rst_n
 	input  wire [3:0]   master_0_core_data_data_be,          //                             .data_data_be
-	input  wire [27:0]  master_0_core_insn_addr,             //                             .insn_addr
-	output wire [127:0] master_0_core_insn_data_rd,          //                             .insn_data_rd
+	input  wire [29:0]  master_0_core_insn_addr,             //                             .insn_addr
+	output wire [31:0]  master_0_core_insn_data_rd,          //                             .insn_data_rd
 	output wire         master_0_core_insn_ready,            //                             .insn_ready
 	input  wire         master_0_core_insn_start,            //                             .insn_start
 	output wire [12:0]  memory_mem_a,                     //                    memory.mem_a
@@ -77,7 +77,7 @@ module platform
 
 	logic[31:0]  avl_insn_address /*verilator public*/;
 	logic        avl_insn_read /*verilator public*/;
-	logic[127:0] avl_insn_readdata /*verilator public_flat_rw @(negedge clk_clk)*/;
+	logic[31:0]  avl_insn_readdata /*verilator public_flat_rw @(negedge clk_clk)*/;
 	logic        avl_insn_waitrequest /*verilator public_flat_rw @(negedge clk_clk)*/;
 
 	bus_master master_0
@@ -100,6 +100,14 @@ module platform
 		.insn_data_rd(master_0_core_insn_data_rd),
 		.insn_ready(master_0_core_insn_ready),
 		.insn_start(master_0_core_insn_start),
+
+		.*
+	);
+
+	bus_arbiter arbiter
+	(
+		.clk(clk_clk),
+		.rst_n(reset_reset_n),
 
 		.*
 	);

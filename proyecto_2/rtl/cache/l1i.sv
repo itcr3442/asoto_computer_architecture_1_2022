@@ -1,6 +1,6 @@
-`include "core/uarch.sv"
+`include "types.sv"
 
-module core_cache_l1i
+module cache_l1i
 (
 	input  logic      clk,
 	                  rst_n,
@@ -19,7 +19,7 @@ module core_cache_l1i
     logic[25:0] bus_addr;
     assign insn_addr = {5'b00000, bus_addr[25:3]};
 
-    core_cache_4way #(.cache_entry(8)) cache
+    cache_4way #(.cache_entry(8)) cache
     (
         .i_p_addr(fetch_addr[24:0]),
         .i_p_byte_en(4'b1111),
