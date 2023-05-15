@@ -80,8 +80,8 @@ mainloop:
     inc r2, 5                     ! Sumar 5 al contador
     stw [r1], r2
 
-    imm r3, 201
-    bne r2, r3, rippling          ! Realizar el efecto
+    imm r3, 200
+    blt r2, r3, rippling          ! Realizar el efecto
     hlt                           ! Finalizó
 
 rippling:
@@ -103,27 +103,48 @@ nextcolumn:
     beq r2, r3, rippling          ! Si x llegó al máximo de columnas
 
 !======= Cálculo de nuevo x =======!
-imm a0, 'x'    ! print
-blk dbg_char    ! print
-    imm r1, 0x00001010
-    ldw a0, [r1]                  ! r2 = y
-    imm r1, 0x00001000
+! imm a0, 'x'    ! print  \
+! blk dbg_char   ! se pierde a0, a1, s0, s1, o0, o1
+    imm r1, 0x00001010            ! cargar dirección de y
+    ldw a0, [r1]                  ! a0 = y
+    imm r1, 0x00001000            ! cargar dirección de Lx
     ldw a1, [r1]                  ! r4 = Lx
     blk sin                       ! o0 = sin(2*pi*y/Lx)
-    mov r2, o0
-    imm r1, 0x00001008
+!psh a0, a1, s0, s1, o0, o1
+!mov a0, o0                        ! print  \
+!blk dbg_word                      ! se pierde a0, a1, s0, s1, o0, o1
+!pop a0, a1, s0, s1, o0, o1
+    mov r2, o0                    ! resultado de seno se guarda en r2
+    imm r1, 0x00001008            ! cargar dirección de Ax
     ldw r3, [r1]                  ! r3 = Ax
     mul r2, r2, r3                ! r2 = Ax*sin(2*pi*y/Lx)
-    imm r1, 0x00001014
+    imm r1, 0x00001014            ! cargar dirección de memoria de x
     ldw r3, [r1]                  ! r3 = x
+!psh a0, a1, s0, s1, o0, o1
+!mov a0, r2                        ! print  \
+!blk dbg_word                      ! se pierde a0, a1, s0, s1, o0, o1
+!pop a0, a1, s0, s1, o0, o1
+    sli r3, r3, 8
     add a0, r2, r3                ! r2 = x + Ax*sin(2*pi*y/Lx)
-    blk round                     ! r2 = round(r2)
+!psh a0, a1, s0, s1, o0, o1
+!mov a0, r2                        ! print  \
+!blk dbg_word                      ! se pierde a0, a1, s0, s1, o0, o1
+!pop a0, a1, s0, s1, o0, o1
+    blk round                     ! o0 = round(a0)
+!psh a0, a1, s0, s1, o0, o1
+!mov a0, o0                        ! print  \
+!blk dbg_word                      ! se pierde a0, a1, s0, s1, o0, o1
+!pop a0, a1, s0, s1, o0, o1
     mov a0, o0 
     imm a1, 640                   ! r4 = 640
-    blk division                  ! r10 = mod(r2, r4)
+    blk division                  ! o1 = mod(a0, a1)
     mov r10, o1
-    imm r1, 0x00001024 
+    imm r1, 0x00001024            ! cargar direccion de memoria de nuevo x
     stw [r1], r10                 ! r10 = Nuevo valor de x
+!psh a0, a1, s0, s1, o0, o1
+!mov a0, r10                       ! print  \
+!blk dbg_word                      ! se pierde a0, a1, s0, s1, o0, o1
+!pop a0, a1, s0, s1, o0, o1
 
 !======= Cálculo de nuevo y =======!
     imm r1, 0x00001014
@@ -137,31 +158,48 @@ blk dbg_char    ! print
     mul r2, r2, r3                ! r2 = Ay*sin(2*pi*x/Ly)
     imm r1, 0x00001010
     ldw r3, [r1]                  ! r3 = y
+!psh a0, a1, s0, s1, o0, o1
+!mov a0, r3                        ! print  \
+!blk dbg_word                      ! se pierde a0, a1, s0, s1, o0, o1
+!pop a0, a1, s0, s1, o0, o1
+    sli r3, r3, 8
     add a0, r2, r3                ! r2 = y + Ay*sin(2*pi*x/Ly)
     blk round                     ! r2 = round(r2)
     mov a0, o0
     imm a1, 480                   ! r4 = 480
     blk division                  ! r10 = mod(r2, r4) (Nuevo valor de y)
     mov r10, o1
-    
+!psh a0, a1, s0, s1, o0, o1
+!mov a0, r10                       ! print  \
+!blk dbg_word                      ! se pierde a0, a1, s0, s1, o0, o1
+!pop a0, a1, s0, s1, o0, o1
+
 !======= Almacenar en VRAM =======!
-    imm r1, 0x00001024 
+    imm r1, 0x00001024            ! cargar dirección de memoria de nuevo x 
     ldw r5, [r1]                  ! r5 = nuevo x
-    imm r1, 0x0000101c 
+    imm r1, 0x0000101c            ! cargar dirección de memoria de contador dememoria
     ldw r4, [r1] 	              ! r4 = Contador memoria
-    imm r2, 0x00010000
-    add r2, r2, r4                ! Sumar offset al contador
-    ldw r3, [r2]                  ! r3 = pixel
+    imm r2, 0x00010000            ! cargar dirección de pixeles
+    add r2, r2, r4                ! Sumar contador a esa dirección
+    ldw r3, [r2]                  ! r3 = pixel (lo sacamos de dirección de pixleles)
     inc r4, 4                     ! Aumentar contador de memoria
     stw [r1], r4                  ! Guardar contador de memoria
-    imm r1, 0x38000000                 
-    add r6, r0, r5                ! r6 = r5
+    imm r1, 0x38000000            ! cargar dirección de vram
     dec r10, 1                    ! nuevo y -= 1
-    imm r7, 640                   
+    dec r5, 1                     ! nuevo x -= 1
+    imm r7, 640                   !               
     mul r10, r10, r7              ! Calcular offset de eje y
-    add r6, r6, r10               ! Sumar offset + nuevo x
-    sli r6, r6, 2                 ! Multiplicar por 4 para calcular posicion de memoria
-    add r1, r1, r6                ! r1 = nueva posicion en VRAM 
+    add r5, r5, r10               ! Sumar offset + nuevo x
+    sli r5, r5, 2                 ! Multiplicar por 4 para calcular posicion de memoria
+    add r1, r1, r5                ! r1 = nueva posicion en VRAM 
+!psh a0, a1, s0, s1, o0, o1
+!mov a0, r1                        ! print  \
+!blk dbg_word                      ! se pierde a0, a1, s0, s1, o0, o1
+!pop a0, a1, s0, s1, o0, o1
+!psh a0, a1, s0, s1, o0, o1
+!mov a0, r3                        ! print  \
+!blk dbg_word                      ! se pierde a0, a1, s0, s1, o0, o1
+!pop a0, a1, s0, s1, o0, o1
     stw [r1], r3                  ! Guardar pixel en su nueva posicion
 
     bal nextcolumn
@@ -173,12 +211,24 @@ sin:
     psh lr, t0, t1
     mov t0, a0
     mov t1, a1
-imm a0, 's'    ! print
-blk dbg_char   ! print
+!imm a0, 's'                     ! print  \
+!blk dbg_char                    ! se pierde a0, a1, s0, s1, o0, o1
     imm a0, 360
     mul a0, a0, t0               ! a0 = 360 * pos
     mov a1, t1                  ! setup args for divition
+!psh a0, a1, s0, s1, o0, o1
+!mov a0, a0                        ! print  \
+!blk dbg_word                      ! se pierde a0, a1, s0, s1, o0, o1
+!pop a0, a1, s0, s1, o0, o1
+!psh a0, a1, s0, s1, o0, o1
+!mov a0, a1                        ! print  \
+!blk dbg_word                      ! se pierde a0, a1, s0, s1, o0, o1
+!pop a0, a1, s0, s1, o0, o1
     blk division                  ! o0 = a0/a1 ^ o1 = a0%a1
+!psh a0, a1, s0, s1, o0, o1
+!mov a0, o0                        ! print  \
+!blk dbg_word                      ! se pierde a0, a1, s0, s1, o0, o1
+!pop a0, a1, s0, s1, o0, o1
     imm s0, 180
     sub s0, s0, o0               ! r2 = (180 - x)
     mul s0, s0, o0               ! r2 = x (180 - x)
@@ -196,9 +246,8 @@ division:
     psh lr, t0, t1, t2, t3, t5, t6
     mov t0, a0
     mov t1, a1
-imm a0, 'd'    ! print
-blk dbg_char   ! print
-
+! imm a0, 'd'    ! print  \
+! blk dbg_char   ! se pierde a0, a1, s0, s1, o0, o1
     mov s0, t0                      ! s0 = t0
     mov s1, zero                    ! s1 = 0
     bne s0, s1, divnezero           ! Si dividendo es cero => q = 0
@@ -218,14 +267,18 @@ blk dbg_char   ! print
     imm t2, 1                     ! Cantidad de bits
     beq s0, s1, logdone           ! Si ya es 1
     logloop:
-imm a0, '6'    ! print
-blk dbg_char   ! print
+! psh s0, s1     !
+! imm a0, '6'    ! print  \
+! blk dbg_char   ! se pierde a0, a1, s0, s1, o0, o1
+! pop s0, s1     !
         sri s0, s0, 1             ! Shift right
         inc t2, 1                 ! Incrementar contador
         bne s0, s1, logloop       ! Verificar que no sea 1
     logdone:                      ! t2 = cantidad de bits
-imm a0, 'l'    ! print
-blk dbg_char   ! print
+! psh s1         !
+! imm a0, 'l'    ! print  \
+! blk dbg_char   ! se pierde a0, a1, s0, s1, o0, o1
+! pop s1         !
     mov s0, t2
     dec s0, 1                     ! s0 = cantidad de bits - 1
 
@@ -257,15 +310,19 @@ continuediv:
 !  o0 = t0
 
 divloop:
+!psh a0, a1, s0, s1, s2, s3
+!mov a0, o0
+!blk dbg_word
+!pop a0, a1, s0, s1, s2, s3
     beq a0, a1, divdone           ! si la cantidad de bits es 0, terminar
     dec a0, 1                     ! Decrementar contador
-    shr t3, t0, s0                ! t3 = MSB de Q
+    shr t3, o0, s0                ! t3 = MSB de Q
     sli o1, o1, 1                 ! A << 1 (o1 = A) 
-    add o1, o1, t3                ! Colocar LSB de A
+    orr o1, o1, t3                ! Colocar LSB de A
     sli o0, o0, 1                 ! Q << 1
     and o0, o0, s1                ! Aplicar máscara 
     mov t5, o1                    ! Guardar A en t5
-    sub t5, t5, t1                ! t5 = A-M 
+    sub t5, t5, t1                ! t5 = A-M
     mov t3, t5                    ! Guardar nuevo A en t3
     and t5, t5, s1                ! Aplicar máscara
     shr t5, t5, s0                ! t5 = MSB de A
@@ -281,8 +338,10 @@ divtriv:
 divdone:
     ! o0: Cociente
     ! o1: Residuo
-imm a0, 'e'    ! print
-blk dbg_char   ! print
+! psh o0, o1     !
+! imm a0, 'e'    ! print  \
+! blk dbg_char   ! se pierde a0, a1, s0, s1, o0, o1
+! pop o0, o1     !
     pop lr, t0, t1, t2, t3, t5, t6
     ret
 
@@ -325,8 +384,9 @@ dbg_word_digit:
 	dec t0, 4
 	bal dbg_word_loop
 dbg_word_exit:
-	pop lr, t1, t0, t2
-	ret
+    pop lr, t1, t0, t2
+    imm a0, '\n'
+    bal dbg_char
 
 dbg_char:
 	imm s0, 0x30000000
