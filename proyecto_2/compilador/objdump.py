@@ -81,7 +81,7 @@ while loc + 2 <= pool_start:
 
         imm = (insn >> 7) & 0x1f
         if imm & 0x10:
-            imm += 1 << 5
+            imm -= 1 << 5
 
         args = [reg(insn >> 12), imm]
     elif not (insn & 0x000f):
@@ -165,7 +165,8 @@ while loc + 2 <= pool_start:
                     mov = ra
                 elif not ra:
                     op = 'neg'
-                    args = []
+                    args = [nrd, nrb]
+                    show_true = True
 
         if mov is not None:
             op = 'mov'

@@ -2,27 +2,33 @@
 
 module core_branch
 (
-	input  logic          clk,
-	                      rst_n,
+	input  logic       clk,
+	                   rst_n,
 
-	input  insn_decode    dec,
-	input  logic          start,
-	                      wb_stall,
-	input  word           a,
-	                      b,
+	input  insn_decode dec,
+	input  logic       start,
+	                   wb_stall,
+	input  word        a,
+	                   b,
 
-	output wb_line        wb,
-	output hword          raw_mask,
-	output hptr           target,
-	output logic          stall,
-	                      branch
+	output wb_line     wb,
+	output hword       raw_mask,
+	output hptr        target,
+	output logic       stall,
+	                   branch
 );
 
-	logic next_stall;
-
 	hword raw_in, raw_hold;
-	logic hold_start, taken;
+	logic hold_start, taken, next_stall;
 	insn_decode hold_dec;
+
+	word diff;
+	logic sgn_a, sgn_b, sgn_diff;
+
+	assign diff = a - b;
+	assign sgn_a = a[31];
+	assign sgn_b = b[31];
+	assign sgn_diff = diff[31];
 
 	assign stall = next_stall || branch;
 	assign raw_mask = raw_in | raw_hold;
@@ -50,7 +56,7 @@ module core_branch
 				taken = 1;
 
 			`COND_LT:
-				taken = a < b;
+				taken = sgn_diff ^ ((sgn_a ^ sgn_b) & (sgn_a ^ sgn_diff));
 
 			`COND_EQ:
 				taken = a == b;

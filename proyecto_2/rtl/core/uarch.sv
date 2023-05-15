@@ -5,15 +5,16 @@
 `define NOP  16'd0
 `define DNOP {`NOP, `NOP}
 
-typedef logic[2:0]   cp_opcode;
-typedef logic[15:0]  reg_list;
-typedef logic[15:0]  hword;
-typedef logic[31:0]  word;
-typedef logic[63:0]  dword;
-typedef logic[127:0] qword;
-typedef logic[30:0]  hptr;
-typedef logic[29:0]  ptr;
-typedef logic[27:0]  qptr;
+typedef logic[2:0]         cp_opcode;
+typedef logic[15:0]        reg_list;
+typedef logic[15:0]        hword;
+typedef logic[31:0]        word;
+typedef logic[63:0]        dword;
+typedef logic[127:0]       qword;
+typedef logic[30:0]        hptr;
+typedef logic[29:0]        ptr;
+typedef logic[27:0]        qptr;
+typedef logic signed[31:0] sword;
 
 `define R0 4'b0000
 
@@ -57,7 +58,7 @@ typedef struct packed
 	           rb,
 	           rd;
 
-	logic[4:0] imm;
+	logic[5:0] imm;
 
 	logic      uses_ra,
 	           uses_rb,
