@@ -17,7 +17,7 @@ module core_alu
 
 	logic[W - 1:0] b_or_imm, q;
 
-	assign b_or_imm = dec.data.uses_imm ? {{(W - $bits(dec.data.imm)){1'b0}}, dec.data.imm} : b;
+	assign b_or_imm = dec.data.uses_imm ? {{(W - 6){dec.data.imm[5]}}, dec.data.imm} : b;
 
 	core_raw_mask rd_mask
 	(

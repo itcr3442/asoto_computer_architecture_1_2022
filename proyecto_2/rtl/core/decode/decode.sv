@@ -111,7 +111,7 @@ module core_decode
 				dec_alu.op = `ALU_ADD;
 				dec_data.ra = `R0;
 				dec_data.rd = insn `FIELD_IMM_D;
-				dec_data.imm = insn `FIELD_IMM_I;
+				dec_data.imm = {insn `FIELD_IMM_I_SIGN, insn `FIELD_IMM_I};
 
 				dec_data.uses_imm = 1;
 				dec_data.writeback = 1;
@@ -165,7 +165,7 @@ module core_decode
 				dec_alu.op = {`ALU_PREFIX_ADDSUB, insn `FIELD_INC_S};
 				dec_data.ra = insn `FIELD_INC_Z;
 				dec_data.rd = dec_data.ra;
-				dec_data.imm = insn `FIELD_INC_I;
+				dec_data.imm = {1'b0, insn `FIELD_INC_I};
 
 				dec_data.uses_ra = 1;
 				dec_data.uses_imm = 1;
@@ -177,7 +177,7 @@ module core_decode
 				dec_alu.op = {`ALU_PREFIX_SHLSHR, insn `FIELD_SHI_S};
 				dec_data.ra = insn `FIELD_SHI_A;
 				dec_data.rd = insn `FIELD_SHI_D;
-				dec_data.imm = insn `FIELD_SHI_I;
+				dec_data.imm = {1'b0, insn `FIELD_SHI_I};
 
 				dec_data.uses_ra = 1;
 				dec_data.uses_imm = 1;

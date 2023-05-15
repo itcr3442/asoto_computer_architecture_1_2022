@@ -33,9 +33,10 @@
 
 // Carga de inmediato pequeño
 
-`define GROUP_IMM   16'b????_????_?100_0000
-`define FIELD_IMM_D [15:12]
-`define FIELD_IMM_I [11:7]
+`define GROUP_IMM        16'b????_????_?100_0000
+`define FIELD_IMM_D      [15:12]
+`define FIELD_IMM_I      [11:7]
+`define FIELD_IMM_I_SIGN [11]
 
 // Salto condicional relativo
 

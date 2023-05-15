@@ -42,7 +42,7 @@ while half := sys.stdin.buffer.read(2):
 
         imm = (insn >> 7) & 0x1f
         if imm & 0x10:
-            imm += 1 << 5
+            imm -= 1 << 5
 
         args = [reg(insn >> 12), imm]
     elif not (insn & 0x000f):

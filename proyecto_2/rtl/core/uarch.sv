@@ -58,7 +58,7 @@ typedef struct packed
 	           rb,
 	           rd;
 
-	logic[4:0] imm;
+	logic[5:0] imm;
 
 	logic      uses_ra,
 	           uses_rb,
