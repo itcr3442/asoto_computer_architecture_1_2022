@@ -9,17 +9,16 @@ module mar810
 	                  halt,
 
 	input  logic      fetch_ready,
-					  data_ready,
+					  ldst_ready,
 	input  word       fetch_data_rd,
-	                  data_data_rd,
+	                  ldst_data_rd,
 
-	output word       data_data_wr,
+	output word       ldst_data_wr,
 	output ptr        fetch_addr,
-	                  data_addr,
+	                  ldst_addr,
 	output logic      fetch_start,
-					  data_start,
-					  data_write,
-	output logic[3:0] data_data_be,
+					  ldst_start,
+					  ldst_write,
 
 	output logic      halted
 );

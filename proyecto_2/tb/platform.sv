@@ -10,7 +10,6 @@ module platform
 	output wire         master_0_core_irq,                   //                             .irq
 	output wire         master_0_core_cpu_clk,               //                             .cpu_clk
 	output wire         master_0_core_cpu_rst_n,             //                             .cpu_rst_n
-	input  wire [3:0]   master_0_core_data_data_be,          //                             .data_data_be
 	input  wire [29:0]  master_0_core_insn_addr,             //                             .insn_addr
 	output wire [31:0]  master_0_core_insn_data_rd,          //                             .insn_data_rd
 	output wire         master_0_core_insn_ready,            //                             .insn_ready
@@ -73,7 +72,6 @@ module platform
 	logic[31:0] avl_data_readdata /*verilator public_flat_rw @(negedge clk_clk)*/;
 	logic[31:0] avl_data_writedata /*verilator public*/;
 	logic       avl_data_waitrequest /*verilator public_flat_rw @(negedge clk_clk)*/;
-	logic[3:0]  avl_data_byteenable /*verilator public*/;
 
 	logic[31:0]  avl_insn_address /*verilator public*/;
 	logic        avl_insn_read /*verilator public*/;
@@ -95,7 +93,6 @@ module platform
 		.data_ready(master_0_core_data_ready),
 		.data_write(master_0_core_data_write),
 		.data_start(master_0_core_data_start),
-		.data_data_be(master_0_core_data_data_be),
 		.insn_addr(master_0_core_insn_addr),
 		.insn_data_rd(master_0_core_insn_data_rd),
 		.insn_ready(master_0_core_insn_ready),

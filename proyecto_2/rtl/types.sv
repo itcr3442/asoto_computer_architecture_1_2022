@@ -1,5 +1,5 @@
-`ifndef TYPES_SV
-`define TYPES_SV
+`ifndef RTL_TYPES_SV
+`define RTL_TYPES_SV
 
 typedef logic[3:0]   nibble;
 typedef logic[15:0]  hword;

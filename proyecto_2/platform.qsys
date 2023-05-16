@@ -150,6 +150,38 @@
          type = "String";
       }
    }
+   element platform
+   {
+      datum _originalDeviceFamily
+      {
+         value = "Cyclone V";
+         type = "String";
+      }
+   }
+   element platform
+   {
+      datum _originalDeviceFamily
+      {
+         value = "Cyclone V";
+         type = "String";
+      }
+   }
+   element platform
+   {
+      datum _originalDeviceFamily
+      {
+         value = "Cyclone V";
+         type = "String";
+      }
+   }
+   element platform
+   {
+      datum _originalDeviceFamily
+      {
+         value = "Cyclone V";
+         type = "String";
+      }
+   }
    element pll_0
    {
       datum _sortIndex
@@ -1313,7 +1345,7 @@
  <connection
    kind="avalon"
    version="20.1"
-   start="master_0.avalon_master_1_1"
+   start="master_0.avalon_master_data_1"
    end="address_span_extender_0.windowed_slave">
   <parameter name="arbitrationPriority" value="1" />
   <parameter name="baseAddress" value="0x0000" />

@@ -13,7 +13,6 @@ module bus_arbiter
 	              avl_data_writedata,
 	              avl_insn_address,
 	              avl_data_address,
-	input  nibble avl_data_byteenable,
 
 	output word   avl_writedata,
 	              avl_address,
@@ -34,8 +33,8 @@ module bus_arbiter
 
 	word hold_addr, hold_data_wr;
 	logic active, hold_start, hold_write, hold_issue, hold_free, transition;
-	nibble hold_data_be;
 
+	assign avl_byteenable = 4'b1111;
 	assign avl_insn_readdata = avl_readdata;
 	assign avl_data_readdata = avl_readdata;
 
@@ -66,14 +65,12 @@ module bus_arbiter
 				avl_address = avl_insn_address;
 				avl_read = avl_insn_read;
 				avl_write = 0;
-				avl_byteenable = 4'b1111;
 			end
 
 			DATA: begin
 				avl_address = avl_data_address;
 				avl_read = avl_data_read;
 				avl_write = avl_data_write;
-				avl_byteenable = avl_data_byteenable;
 			end
 		endcase
 
@@ -82,7 +79,6 @@ module bus_arbiter
 			avl_write = hold_write;
 			avl_read = !hold_write;
 			avl_writedata = hold_data_wr;
-			avl_byteenable = hold_data_be;
 		end
 	end
 
@@ -95,7 +91,6 @@ module bus_arbiter
 			hold_start <= 0;
 			hold_write <= 0;
 			hold_data_wr <= 0;
-			hold_data_be <= 0;
 		end else begin
 			master <= next_master;
 			active <= avl_read || avl_write || (active && avl_waitrequest);
@@ -107,14 +102,12 @@ module bus_arbiter
 						hold_start <= avl_data_read || avl_data_write;
 						hold_write <= avl_data_write;
 						hold_data_wr <= avl_data_writedata;
-						hold_data_be <= avl_data_byteenable;
 					end
 
 					DATA: begin
 						hold_addr <= avl_insn_address;
 						hold_start <= avl_insn_read;
 						hold_write <= 0;
-						hold_data_be <= 4'b1111;
 					end
 				endcase
 		end

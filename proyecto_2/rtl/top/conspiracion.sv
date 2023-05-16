@@ -47,11 +47,12 @@ module conspiracion
 );
 
 	logic button, reset_reset_n, cpu_clk, cpu_rst_n, cpu_halt, irq,
-	      fetch_ready, insn_ready, data_ready, fetch_start, insn_start, data_start, data_write;
+	      fetch_ready, insn_ready, ldst_ready, data_ready,
+		  fetch_start, insn_start, ldst_start, data_start,
+		  ldst_write, data_write;
 
-	ptr fetch_addr, data_addr;
-	word fetch_data_rd, data_data_rd, data_data_wr;
-	nibble data_data_be;
+	ptr fetch_addr, ldst_addr;
+	word fetch_data_rd, ldst_data_rd, ldst_data_wr;
 
 	mar810 core
 	(
@@ -63,21 +64,25 @@ module conspiracion
 	);
 
 `ifdef VERILATOR
+	assign button = pio_buttons;
 	assign cpu_halt = halt;
 	assign reset_reset_n = rst_n;
-	assign button = pio_buttons;
 
-	ptr insn_addr;
-	word insn_data_rd;
+	ptr insn_addr, data_addr;
+	word insn_data_rd, data_data_rd, data_data_wr;
 
 	assign insn_addr = fetch_addr;
 	assign insn_start = fetch_start;
 	assign fetch_ready = insn_ready;
 	assign fetch_data_rd = insn_data_rd;
-`else
-	qptr insn_addr;
-	qword insn_data_rd;
 
+	assign data_addr = ldst_addr;
+	assign data_start = ldst_start;
+	assign data_write = ldst_write;
+	assign data_data_wr = ldst_data_wr;
+	assign ldst_ready = data_ready;
+	assign ldst_data_rd = data_data_rd;
+`else
 	debounce reset_debounce
 	(
 		.clk(clk_clk),
@@ -99,7 +104,39 @@ module conspiracion
 		.clean(button)
 	);
 
+	qptr insn_addr;
+	qword insn_data_rd;
+
 	cache_l1i l1i
+	(
+		.clk(cpu_clk),
+		.rst_n(cpu_rst_n),
+		.*
+	);
+
+	qptr data_addr;
+	word l1d_data_rd;
+	qword data_data_rd, data_data_wr;
+	logic l1d_ready;
+
+	cache_l1d l1d
+	(
+		.clk(cpu_clk),
+		.rst_n(cpu_rst_n),
+		.ldst_addr(l1d_addr),
+		.ldst_start(l1d_start),
+		.ldst_write(l1d_write),
+		.ldst_ready(l1d_ready),
+		.ldst_data_rd(l1d_data_rd),
+		.ldst_data_wr(l1d_data_wr),
+		.*
+	);
+
+	ptr l1d_addr, io_addr;
+	word l1d_data_wr, io_data_wr, io_data_rd;
+	logic l1d_start, l1d_write, io_start, io_write, io_ready;
+
+	ldst_switch switch
 	(
 		.clk(cpu_clk),
 		.rst_n(cpu_rst_n),
@@ -122,7 +159,14 @@ module conspiracion
 		.master_0_core_insn_start(insn_start),
 		.master_0_core_data_start(data_start),
 		.master_0_core_data_write(data_write),
-		.master_0_core_data_data_be(data_data_be),
+`ifndef VERILATOR
+		.master_0_core_io_ready(io_ready),
+		.master_0_core_io_data_rd(io_data_rd),
+		.master_0_core_io_data_wr(io_data_wr),
+		.master_0_core_io_addr(io_addr),
+		.master_0_core_io_start(io_start),
+		.master_0_core_io_write(io_write),
+`endif
 		.pll_0_reset_reset(0), //TODO: reset controller, algún día
 		.pio_0_external_connection_export(pio_leds),
 		.switches_external_connection_export({2'b00, pio_switches}),
