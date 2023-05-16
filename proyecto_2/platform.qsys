@@ -190,6 +190,14 @@
          type = "String";
       }
    }
+   element platform
+   {
+      datum _originalDeviceFamily
+      {
+         value = "Cyclone V";
+         type = "String";
+      }
+   }
    element pll_0
    {
       datum _sortIndex
