@@ -114,27 +114,13 @@ module conspiracion
 		.*
 	);
 
-	qptr data_addr;
-	word l1d_data_rd;
-	qword data_data_rd, data_data_wr;
-	logic l1d_ready;
+	ptr data_addr;
+	word data_data_rd, data_data_wr;
 
-	cache_l1d l1d
-	(
-		.clk(cpu_clk),
-		.rst_n(cpu_rst_n),
-		.ldst_addr(l1d_addr),
-		.ldst_start(l1d_start),
-		.ldst_write(l1d_write),
-		.ldst_ready(l1d_ready),
-		.ldst_data_rd(l1d_data_rd),
-		.ldst_data_wr(l1d_data_wr),
-		.*
-	);
 
-	ptr l1d_addr, io_addr;
-	word l1d_data_wr, io_data_wr, io_data_rd;
-	logic l1d_start, l1d_write, io_start, io_write, io_ready;
+	ptr io_addr;
+	word io_data_wr, io_data_rd;
+	logic io_start, io_write, io_ready;
 
 	ldst_switch switch
 	(
