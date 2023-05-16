@@ -116,84 +116,73 @@ rippling_start:
 
 rippling_next:
     imm r1, 0x00001010
-    ldw r2, [r1]                  ! Cargar y
-    inc r2, 1                     ! y += 1
-    stw [r1], r2
+    inc r7, 1                     ! y += 1
+    stw [r1], r7
+	mov r2, r7
 
 rippling:
     imm r3, 480
-    imm r1, 0x00001014
-    stw [r1], r0                  ! Reiniciar x
     beq r2, r3, mainloop          ! Si y llegó al máximo de filas
 
+	imm r1, 0x00002000
+	sli a0, r2, 2
+	add r1, a0, r1
+	ldw r6, [r1]
+    imm r1, 0x00001008            ! cargar dirección de Ax
+    ldw r3, [r1]                  ! r3 = Ax
+	mul r6, r6, r3
+
+	mov r7, r2
     mov r2, zero
 nextcolumn:
     imm r3, 640
     beq r2, r3, rippling_next     ! Si x llegó al máximo de columnas
 
 !======= Cálculo de nuevo x =======!
-    imm r1, 0x00001010            ! cargar dirección de y
-    ldw a0, [r1]                  ! a0 = y
-    imm r1, 0x00002000
-	sli a0, a0, 2
-	add r1, a0, r1
-	ldw r2, [r1]
-
-    imm r1, 0x00001008            ! cargar dirección de Ax
-    ldw r3, [r1]                  ! r3 = Ax
-    mul r2, r2, r3                ! r2 = Ax*sin(2*pi*y/Lx)
-    imm r1, 0x00001014            ! cargar dirección de memoria de x
-    ldw r3, [r1]                  ! r3 = x
+	mov r3, r2
 	inc r3, 1
     sli r3, r3, 8
-    add a0, r2, r3                ! r2 = x + Ax*sin(2*pi*y/Lx)
+    add a0, r6, r3                ! r2 = x + Ax*sin(2*pi*y/Lx)
 	imm a1, 640
     blk clamp                     ! o0 = clamp(a0)
     imm r1, 0x00001024            ! cargar direccion de memoria de nuevo x
     stw [r1], o0                  ! r10 = Nuevo valor de x
 
 !======= Cálculo de nuevo y =======!
-    imm r1, 0x00001014
-    ldw a0, [r1]                  ! r2 = x
     imm r1, 0x00003000
-	sli a0, a0, 2
+	sli a0, r2, 2
 	add r1, a0, r1
-	ldw r2, [r1]
+	ldw r3, [r1]
 
     imm r1, 0x0000100c
-    ldw r3, [r1]                  ! r3 = Ay
-    mul r2, r2, r3                ! r2 = Ay*sin(2*pi*x/Ly)
-    imm r1, 0x00001010
-    ldw r3, [r1]                  ! r3 = y
-	inc r3, 1
-    sli r3, r3, 8
-    add a0, r2, r3                ! r2 = y + Ay*sin(2*pi*x/Ly)
+    ldw r4, [r1]                  ! r3 = Ay
+    mul r3, r3, r4                ! r2 = Ay*sin(2*pi*x/Ly)
+	mov r4, r7
+	inc r4, 1
+	sli r4, r4, 8
+    add a0, r3, r4                ! r2 = y + Ay*sin(2*pi*x/Ly)
     imm a1, 480
     blk clamp                     ! r2 = clamp(r2)
-    mov r10, o0
 
 !======= Almacenar en VRAM =======!
     imm r1, 0x00001024            ! cargar dirección de memoria de nuevo x 
     ldw r5, [r1]                  ! r5 = nuevo x
     imm r1, 0x0000101c            ! cargar dirección de memoria de contador dememoria
     ldw r4, [r1] 	              ! r4 = Contador memoria
-    imm r2, 0x00010000            ! cargar dirección de pixeles
-    add r2, r2, r4                ! Sumar contador a esa dirección
-    ldw r3, [r2]                  ! r3 = pixel (lo sacamos de dirección de pixleles)
+    imm a0, 0x00010000            ! cargar dirección de pixeles
+    add a0, a0, r4                ! Sumar contador a esa dirección
+    ldw r3, [a0]                  ! r3 = pixel (lo sacamos de dirección de pixleles)
     inc r4, 4                     ! Aumentar contador de memoria
     stw [r1], r4                  ! Guardar contador de memoria
     imm r1, 0x38000000            ! cargar dirección de vram
-    imm r7, 640                   !               
-    mul r10, r10, r7              ! Calcular offset de eje y
-    add r5, r5, r10               ! Sumar offset + nuevo x
+    imm r4, 640                   !               
+    mul o0, o0, r4                ! Calcular offset de eje y
+    add r5, r5, o0                ! Sumar offset + nuevo x
     sli r5, r5, 2                 ! Multiplicar por 4 para calcular posicion de memoria
     add r1, r1, r5                ! r1 = nueva posicion en VRAM 
     stw [r1], r3                  ! Guardar pixel en su nueva posicion
 
-    imm r1, 0x00001014
-    ldw r2, [r1]                  ! Cargar x
     inc r2, 1                     ! x += 1
-    stw [r1], r2
     bal nextcolumn
 
 clamp:
