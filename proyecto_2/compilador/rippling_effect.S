@@ -83,14 +83,9 @@ start:
     stw [r1], r0                  ! Contador memoria
 
 mainloop:
-    imm r1, 0x0000101c            ! Reiniciar
-    stw [r1], r0                  ! Posicionarse al inicio de los pixeles (x)
-
-    imm r1, 0x00001010            ! Reiniciar
-    stw [r1], r0                  ! Posicionarse al inicio de los pixeles (y)
     imm r4, 307200                ! r4 = (640*480)
     imm r5, 0                     ! r5 = 0
-    imm r2, 0x38000000            ! r2 = direccion a VRAM
+	imm r2, 0x38000000
     clearVRAM:
         stw [r2], r0              ! Guardar pixel en VRAM
         inc r2, 4
@@ -106,6 +101,8 @@ mainloop:
     inc r2, 5                     ! Sumar 5 al contador
     stw [r1], r2
 
+	imm r4, 0x00010000
+
     imm r3, 200
     blt r2, r3, rippling_start    ! Realizar el efecto
     hlt                           ! Finalizó
@@ -115,110 +112,89 @@ rippling_start:
 	bal rippling
 
 rippling_next:
-    imm r1, 0x00001010
-    ldw r2, [r1]                  ! Cargar y
-    inc r2, 1                     ! y += 1
-    stw [r1], r2
+    inc r7, 1                     ! y += 1
+	mov r2, r7
 
 rippling:
     imm r3, 480
-    imm r1, 0x00001014
-    stw [r1], r0                  ! Reiniciar x
     beq r2, r3, mainloop          ! Si y llegó al máximo de filas
 
+	imm r1, 0x00002000
+	sli a0, r2, 2
+	add r1, a0, r1
+	ldw r6, [r1]
+    imm r1, 0x00001008            ! cargar dirección de Ax
+    ldw r3, [r1]                  ! r3 = Ax
+	mul r6, r6, r3
+
+	mov r7, r2
     mov r2, zero
 nextcolumn:
     imm r3, 640
     beq r2, r3, rippling_next     ! Si x llegó al máximo de columnas
 
 !======= Cálculo de nuevo x =======!
-    imm r1, 0x00001010            ! cargar dirección de y
-    ldw a0, [r1]                  ! a0 = y
-    imm r1, 0x00002000
-	sli a0, a0, 2
-	add r1, a0, r1
-	ldw r2, [r1]
-
-    imm r1, 0x00001008            ! cargar dirección de Ax
-    ldw r3, [r1]                  ! r3 = Ax
-    mul r2, r2, r3                ! r2 = Ax*sin(2*pi*y/Lx)
-    imm r1, 0x00001014            ! cargar dirección de memoria de x
-    ldw r3, [r1]                  ! r3 = x
-	inc r3, 1
+	mov r3, r2
     sli r3, r3, 8
-    add a0, r2, r3                ! r2 = x + Ax*sin(2*pi*y/Lx)
-	imm a1, 640
-    blk clamp                     ! o0 = clamp(a0)
-    imm r1, 0x00001024            ! cargar direccion de memoria de nuevo x
-    stw [r1], o0                  ! r10 = Nuevo valor de x
+    add a0, r6, r3                ! r2 = x + Ax*sin(2*pi*y/Lx)
+    imm s2, 163840  ! 640 << 8
+    mov a1, zero
+x_clamp_loop:
+    mov s3, a0
+    blt a0, a1, x_clamp_increase          ! arg < 0
+    blt s2, s3, x_clamp_decrease          ! (640 << 8) < arg
+	sri r5, a0, 8
+	bal x_clamp_done
+x_clamp_increase:
+    add a0, a0, s2      ! arg + (640 << 8)
+    bal x_clamp_loop
+x_clamp_decrease:
+    sub a0, a0, s2
+    bal x_clamp_loop
+x_clamp_done:
 
 !======= Cálculo de nuevo y =======!
-    imm r1, 0x00001014
-    ldw a0, [r1]                  ! r2 = x
     imm r1, 0x00003000
-	sli a0, a0, 2
+	sli a0, r2, 2
 	add r1, a0, r1
-	ldw r2, [r1]
+	ldw r3, [r1]
 
     imm r1, 0x0000100c
-    ldw r3, [r1]                  ! r3 = Ay
-    mul r2, r2, r3                ! r2 = Ay*sin(2*pi*x/Ly)
-    imm r1, 0x00001010
-    ldw r3, [r1]                  ! r3 = y
-	inc r3, 1
-    sli r3, r3, 8
-    add a0, r2, r3                ! r2 = y + Ay*sin(2*pi*x/Ly)
-    imm a1, 480
-    blk clamp                     ! r2 = clamp(r2)
-    mov r10, o0
+    ldw a0, [r1]                  ! r3 = Ay
+    mul r3, r3, a0                ! r2 = Ay*sin(2*pi*x/Ly)
+	mov a0, r7
+	sli a0, a0, 8
+    add a0, r3, a0                ! r2 = y + Ay*sin(2*pi*x/Ly)
+	imm s2, 122880    ! 480 << 8
+    mov a1, zero
+y_clamp_loop:
+    mov s3, a0
+    blt a0, a1, y_clamp_increase          ! arg < 0
+    blt s2, s3, y_clamp_decrease          ! (640 << 8) < arg
+	sri o0, a0, 8
+	bal y_clamp_done
+y_clamp_increase:
+    add a0, a0, s2      ! arg + (640 << 8)
+    bal y_clamp_loop
+y_clamp_decrease:
+    sub a0, a0, s2
+    bal y_clamp_loop
+y_clamp_done:
 
 !======= Almacenar en VRAM =======!
-    imm r1, 0x00001024            ! cargar dirección de memoria de nuevo x 
-    ldw r5, [r1]                  ! r5 = nuevo x
-    imm r1, 0x0000101c            ! cargar dirección de memoria de contador dememoria
-    ldw r4, [r1] 	              ! r4 = Contador memoria
-    imm r2, 0x00010000            ! cargar dirección de pixeles
-    add r2, r2, r4                ! Sumar contador a esa dirección
-    ldw r3, [r2]                  ! r3 = pixel (lo sacamos de dirección de pixleles)
+    ldw r3, [r4]                  ! r3 = pixel (lo sacamos de dirección de pixleles)
     inc r4, 4                     ! Aumentar contador de memoria
-    stw [r1], r4                  ! Guardar contador de memoria
     imm r1, 0x38000000            ! cargar dirección de vram
-    imm r7, 640                   !               
-    mul r10, r10, r7              ! Calcular offset de eje y
-    add r5, r5, r10               ! Sumar offset + nuevo x
+    imm o1, 640                   !               
+    mul o0, o0, o1                ! Calcular offset de eje y
+    add r5, r5, o0                ! Sumar offset + nuevo x
     sli r5, r5, 2                 ! Multiplicar por 4 para calcular posicion de memoria
     add r1, r1, r5                ! r1 = nueva posicion en VRAM 
     stw [r1], r3                  ! Guardar pixel en su nueva posicion
 
-    imm r1, 0x00001014
-    ldw r2, [r1]                  ! Cargar x
     inc r2, 1                     ! x += 1
-    stw [r1], r2
     bal nextcolumn
 
-clamp:
-	imm s0, 256
-    sli s2, a1, 8
-	sub a0, a0, s0
-    mov a1, zero
-
-clamp_loop:
-    mov s3, a0
-    blt a0, a1, clamp_increase          ! arg < 0
-    blt s2, s3, clamp_decrease          ! (640 << 8) < arg
-	sri o0, a0, 8
-    ret
-
-clamp_increase:
-    add a0, a0, s2      ! arg + (640 << 8)
-    bal clamp_loop
-
-clamp_decrease:
-    sub a0, a0, s2
-    bal clamp_loop
-
-
-               
 ! sin(x) ~ 4x (180 - x) / [40500 - x (180 - x)] para 0 <= x <= 180 en grados
 ! rr = sin(2*pi*a0/a1) = sin(x/L)
 sin:
