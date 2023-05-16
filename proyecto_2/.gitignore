@@ -43,4 +43,7 @@ hps_isw_handoff/
 *.vcd
 qmegawiz_errors_log.txt
 cr_ie_info.json
+
+out_files/*
 u-boot
+*.bin
