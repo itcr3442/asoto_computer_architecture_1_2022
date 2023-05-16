@@ -256,7 +256,6 @@ class Load_imm(Ins):
             self.imm_label = pool(self.imm)
 
     def encode(self, labels):
-
         d = self.encode_reg(self.rd)
 
         match self.length():
@@ -264,8 +263,21 @@ class Load_imm(Ins):
                 i = self.encode_signed(self.imm, 5)
                 return (d, i, "1000000")
             case 2:
-                j = self.encode_rel(labels, self.imm_label, 10)
-                return [(j, "11", d), ("00000", d, "101", d)]
+                imm = self.imm
+                if imm < 0:
+                    imm += 1 << 32
+
+                shift = 0
+                while imm and not (imm & 1):
+                    imm >>= 1
+                    shift += 1
+
+                if imm.bit_length() <= 4:
+                    return [(d, "0", self.encode_unsigned(imm, 4), "1000000"),
+                            (self.encode_unsigned(shift, 5), d, "001", d)]
+                else:
+                    j = self.encode_rel(labels, self.imm_label, 10)
+                    return [(j, "11", d), ("00000", d, "101", d)]
 
 
 class Cond_j(Ins):
