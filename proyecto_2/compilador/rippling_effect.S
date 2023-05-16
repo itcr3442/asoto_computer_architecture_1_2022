@@ -182,7 +182,6 @@ y_clamp_decrease:
 y_clamp_done:
 
 !======= Almacenar en VRAM =======!
-    imm r1, 0x0000101c            ! cargar dirección de memoria de contador dememoria
     ldw r3, [r4]                  ! r3 = pixel (lo sacamos de dirección de pixleles)
     inc r4, 4                     ! Aumentar contador de memoria
     imm r1, 0x38000000            ! cargar dirección de vram
