@@ -65,6 +65,14 @@
          type = "int";
       }
    }
+   element l1d
+   {
+      datum _sortIndex
+      {
+         value = "19";
+         type = "int";
+      }
+   }
    element master_0
    {
       datum _sortIndex
@@ -108,6 +116,14 @@
       {
          value = "0";
          type = "boolean";
+      }
+   }
+   element platform
+   {
+      datum _originalDeviceFamily
+      {
+         value = "Cyclone V";
+         type = "String";
       }
    }
    element platform
@@ -902,6 +918,9 @@
   <parameter name="writeBufferDepth" value="64" />
   <parameter name="writeIRQThreshold" value="8" />
  </module>
+ <module name="l1d" kind="l1" version="1.0" enabled="1">
+  <parameter name="cache_entry" value="10" />
+ </module>
  <module
    name="master_0"
    kind="conspiracion_bus_master"
@@ -1346,7 +1365,7 @@
    kind="avalon"
    version="20.1"
    start="master_0.avalon_master_data_1"
-   end="address_span_extender_0.windowed_slave">
+   end="l1d.slave">
   <parameter name="arbitrationPriority" value="1" />
   <parameter name="baseAddress" value="0x0000" />
   <parameter name="defaultConnection" value="false" />
@@ -1453,6 +1472,15 @@
   <parameter name="defaultConnection" value="false" />
  </connection>
  <connection
+   kind="avalon"
+   version="20.1"
+   start="l1d.master"
+   end="address_span_extender_0.windowed_slave">
+  <parameter name="arbitrationPriority" value="1" />
+  <parameter name="baseAddress" value="0x0000" />
+  <parameter name="defaultConnection" value="false" />
+ </connection>
+ <connection
    kind="avalon_streaming"
    version="20.1"
    start="pixfifo.avalon_dc_buffer_source"
@@ -1508,6 +1536,7 @@
    version="20.1"
    start="pll_0.outclk1"
    end="master_0.clock" />
+ <connection kind="clock" version="20.1" start="pll_0.outclk1" end="l1d.clock" />
  <connection
    kind="clock"
    version="20.1"
@@ -1606,6 +1635,11 @@
    version="20.1"
    start="clk_0.clk_reset"
    end="intc_0.reset_sink" />
+ <connection
+   kind="reset"
+   version="20.1"
+   start="clk_0.clk_reset"
+   end="l1d.reset_sink" />
  <connection
    kind="reset"
    version="20.1"

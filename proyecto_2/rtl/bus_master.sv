@@ -13,8 +13,8 @@ module bus_master
 	output logic[31:0]  insn_data_rd,
 	                    data_data_rd,
 `else
-	output logic[127:0] insn_data_rd,
-	                    data_data_rd,
+	output logic [127:0] insn_data_rd,
+	output logic [31:0]  data_data_rd,
 `endif
 
 	input  logic[31:0]  data_data_wr,
@@ -23,7 +23,7 @@ module bus_master
 	                    data_addr,
 `else
 	input  logic[27:0]  insn_addr,
-	                    data_addr,
+	input  logic[29:0]  data_addr,
 `endif
 	input  logic        insn_start,
 	                    data_start,
@@ -46,8 +46,8 @@ module bus_master
 	input  logic[31:0]  avl_data_readdata,
 	output logic[31:0]  avl_data_writedata,
 `else
-	input  logic[127:0] avl_data_readdata,
-	output logic[127:0] avl_data_writedata,
+	input  logic[31:0] avl_data_readdata,
+	output logic[31:0] avl_data_writedata,
 `endif
 
 	output logic[31:0]  avl_insn_address,
