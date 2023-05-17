@@ -248,11 +248,26 @@ class Load_imm(Ins):
         self.rd = self.parse_reg(zero=False)
         self.imm = self.parse_imm()
 
+        self.shift, self.shift_imm = None, None
+        if self.length() == 2:
+            imm = self.imm
+            if imm < 0:
+                imm += 1 << 32
+
+            shift = 0
+            while imm and not (imm & 1):
+                imm >>= 1
+                shift += 1
+
+            if imm.bit_length() <= 4:
+                self.shift = shift
+                self.shift_imm = imm
+
     def length(self):
         return 1 if -16 <= self.imm <= 15 else 2
 
     def imm_pool(self, pool):
-        if self.length() == 2:
+        if self.length() == 2 and self.shift is None:
             self.imm_label = pool(self.imm)
 
     def encode(self, labels):
@@ -263,18 +278,9 @@ class Load_imm(Ins):
                 i = self.encode_signed(self.imm, 5)
                 return (d, i, "1000000")
             case 2:
-                imm = self.imm
-                if imm < 0:
-                    imm += 1 << 32
-
-                shift = 0
-                while imm and not (imm & 1):
-                    imm >>= 1
-                    shift += 1
-
-                if imm.bit_length() <= 4:
-                    return [(d, "0", self.encode_unsigned(imm, 4), "1000000"),
-                            (self.encode_unsigned(shift, 5), d, "001", d)]
+                if self.shift is not None:
+                    return [(d, "0", self.encode_unsigned(self.shift_imm, 4), "1000000"),
+                            (self.encode_unsigned(self.shift, 5), d, "001", d)]
                 else:
                     j = self.encode_rel(labels, self.imm_label, 10)
                     return [(j, "11", d), ("00000", d, "101", d)]
@@ -501,6 +507,17 @@ class Push_pop(Ins):
         return encs
 
 
+class End_pool(Ins):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def length(self):
+        return 0
+
+    def encode(self, labels):
+        return []
+
+
 ISA = {
     "bal": Icond_rel_j,
     "hlt": Icond_rel_j,
@@ -536,6 +553,7 @@ ISA = {
     "pop": Push_pop,
     "word": Raw,
     "hword": Raw,
+    "endpool": End_pool,
 }
 
 
@@ -549,6 +567,7 @@ def assemble(file):
     insns = []
     labels = {}
     imm_labels = {}
+    imm_pools = []
 
     def get_imm_label(imm):
         nonlocal imm_labels
@@ -562,6 +581,23 @@ def assemble(file):
             imm_labels[imm] = label
 
         return label
+
+    def push_pool():
+        nonlocal pc, imm_labels, imm_pools
+
+        # Inmediatos tienen que estar alineados a words
+        imm_pool_padding = bool(pc & 1)
+        if imm_pool_padding:
+            pc += 1
+
+        imms = []
+        for imm, label in iter(imm_labels.items()):
+            imms.append(imm)
+            labels[label] = pc
+            pc += 2
+
+        imm_pools.append((imm_pool_padding, imms))
+        imm_labels = {}
 
     with open(file, "r") as src:
         for lineno, line in enumerate(src, start=1):
@@ -604,17 +640,24 @@ def assemble(file):
             insns.append(insn)
             pc += insn.length()
 
-    # Inmediatos tienen que estar alineados a words
-    imm_pool_padding = bool(pc & 1)
-    if imm_pool_padding:
-        pc += 1
+            if isinstance(insn, End_pool):
+                push_pool()
 
-    imm_labels = list(imm_labels.items())
-    for imm, label in imm_labels:
-        labels[label] = pc
-        pc += 2
-
+    push_pool()
     output = bytearray()
+    pool_index = 0
+
+    def write_imm_pool():
+        nonlocal output, pool_index, imm_pools
+
+        imm_pool_padding, imms = imm_pools[pool_index]
+        if imm_pool_padding:
+            output.extend(b'\x00\x00')
+
+        for imm in imms:
+            output.extend(imm.to_bytes(4, 'little'))
+
+        pool_index += 1
 
     for insn in insns:
         encs = insn.encode(labels)
@@ -630,11 +673,11 @@ def assemble(file):
 
             output.extend(int(enc, 2).to_bytes(2, "little"))
 
-    if imm_pool_padding:
-        output.extend(b'\x00\x00')
+        if isinstance(insn, End_pool):
+            write_imm_pool()
 
-    for imm, _label in imm_labels:
-        output.extend(imm.to_bytes(4, 'little'))
+    assert pool_index == len(imm_pools) - 1
+    write_imm_pool()
 
     return output
 
