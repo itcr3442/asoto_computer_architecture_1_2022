@@ -15,6 +15,195 @@ reset:
 ! Stack pointer
 imm sp, 0x00002000
 
+! Configura ADV7513 a través de host I2C
+imm r1, 0x3008000 ! TFR_CMD
+imm r2, 0x272     ! 0x72 | STA
+
+imm r3, 0x098
+imm r4, 0x103
+stw [r1], r2
+stw [r1], r3
+stw [r1], r4
+
+imm r3, 0x001
+imm r4, 0x100
+stw [r1], r2
+stw [r1], r3
+stw [r1], r4
+
+imm r3, 0x002
+imm r4, 0x118
+stw [r1], r2
+stw [r1], r3
+stw [r1], r4
+
+imm r3, 0x003
+imm r4, 0x100
+stw [r1], r2
+stw [r1], r3
+stw [r1], r4
+
+imm r3, 0x014
+imm r4, 0x170
+stw [r1], r2
+stw [r1], r3
+stw [r1], r4
+
+imm r3, 0x015
+imm r4, 0x120
+stw [r1], r2
+stw [r1], r3
+stw [r1], r4
+
+imm r3, 0x016
+imm r4, 0x130
+stw [r1], r2
+stw [r1], r3
+stw [r1], r4
+
+imm r3, 0x018
+imm r4, 0x146
+stw [r1], r2
+stw [r1], r3
+stw [r1], r4
+
+imm r3, 0x040
+imm r4, 0x180
+stw [r1], r2
+stw [r1], r3
+stw [r1], r4
+
+imm r3, 0x041
+imm r4, 0x110
+stw [r1], r2
+stw [r1], r3
+stw [r1], r4
+
+imm r3, 0x049
+imm r4, 0x1a8
+stw [r1], r2
+stw [r1], r3
+stw [r1], r4
+
+imm r3, 0x055
+imm r4, 0x110
+stw [r1], r2
+stw [r1], r3
+stw [r1], r4
+
+imm r3, 0x056
+imm r4, 0x108
+stw [r1], r2
+stw [r1], r3
+stw [r1], r4
+
+imm r3, 0x096
+imm r4, 0x1f6
+stw [r1], r2
+stw [r1], r3
+stw [r1], r4
+
+imm r3, 0x073
+imm r4, 0x107
+stw [r1], r2
+stw [r1], r3
+stw [r1], r4
+
+imm r3, 0x076
+imm r4, 0x11f
+stw [r1], r2
+stw [r1], r3
+stw [r1], r4
+
+imm r3, 0x098
+imm r4, 0x103
+stw [r1], r2
+stw [r1], r3
+stw [r1], r4
+
+imm r3, 0x099
+imm r4, 0x102
+stw [r1], r2
+stw [r1], r3
+stw [r1], r4
+
+imm r3, 0x09a
+imm r4, 0x1e0
+stw [r1], r2
+stw [r1], r3
+stw [r1], r4
+
+imm r3, 0x09c
+imm r4, 0x130
+stw [r1], r2
+stw [r1], r3
+stw [r1], r4
+
+imm r3, 0x09d
+imm r4, 0x161
+stw [r1], r2
+stw [r1], r3
+stw [r1], r4
+
+imm r3, 0x0a2
+imm r4, 0x1a4
+stw [r1], r2
+stw [r1], r3
+stw [r1], r4
+
+imm r3, 0x0a3
+imm r4, 0x1a4
+stw [r1], r2
+stw [r1], r3
+stw [r1], r4
+
+imm r3, 0x0a5
+imm r4, 0x104
+stw [r1], r2
+stw [r1], r3
+stw [r1], r4
+
+imm r3, 0x0ab
+imm r4, 0x140
+stw [r1], r2
+stw [r1], r3
+stw [r1], r4
+
+imm r3, 0x0af
+imm r4, 0x116
+stw [r1], r2
+stw [r1], r3
+stw [r1], r4
+
+imm r3, 0x0ba
+imm r4, 0x160
+stw [r1], r2
+stw [r1], r3
+stw [r1], r4
+
+imm r3, 0x0d1
+imm r4, 0x1ff
+stw [r1], r2
+stw [r1], r3
+stw [r1], r4
+
+imm r3, 0x0de
+imm r4, 0x110
+stw [r1], r2
+stw [r1], r3
+
+imm r3, 0x0e4
+imm r4, 0x160
+stw [r1], r2
+stw [r1], r3
+stw [r1], r4
+
+imm r3, 0x0fa
+imm r4, 0x17d
+stw [r1], r2
+stw [r1], r3
+stw [r1], r4
+
 !equ START_BUTTON, 0x30050000       Dirección de memoria del botón
 !equ START, 0x00010000              Dirección de memoria de los pixeles
 !equ VRAM, 0x38000000 
