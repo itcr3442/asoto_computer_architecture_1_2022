@@ -17,6 +17,14 @@
          type = "int";
       }
    }
+   element address_span_extender_1
+   {
+      datum _sortIndex
+      {
+         value = "20";
+         type = "int";
+      }
+   }
    element buttons
    {
       datum _sortIndex
@@ -333,6 +341,20 @@
   <parameter name="MASTER_ADDRESS_WIDTH" value="32" />
   <parameter name="MAX_PENDING_READS" value="1" />
   <parameter name="SLAVE_ADDRESS_WIDTH" value="25" />
+  <parameter name="SUB_WINDOW_COUNT" value="1" />
+ </module>
+ <module
+   name="address_span_extender_1"
+   kind="altera_address_span_extender"
+   version="20.1"
+   enabled="1">
+  <parameter name="BURSTCOUNT_WIDTH" value="1" />
+  <parameter name="DATA_WIDTH" value="32" />
+  <parameter name="ENABLE_SLAVE_PORT" value="false" />
+  <parameter name="MASTER_ADDRESS_DEF" value="939524096" />
+  <parameter name="MASTER_ADDRESS_WIDTH" value="32" />
+  <parameter name="MAX_PENDING_READS" value="1" />
+  <parameter name="SLAVE_ADDRESS_WIDTH" value="22" />
   <parameter name="SUB_WINDOW_COUNT" value="1" />
  </module>
  <module name="buttons" kind="altera_avalon_pio" version="20.1" enabled="1">
@@ -960,11 +982,11 @@
   <parameter name="AUTO_CLK_CLOCK_RATE" value="143000000" />
   <parameter name="AUTO_DEVICE_FAMILY" value="Cyclone V" />
   <parameter name="addr_mode" value="Consecutive" />
-  <parameter name="back_start_address" value="419430400" />
+  <parameter name="back_start_address" value="947912704" />
   <parameter name="color_space" value="32-bit RGBA" />
   <parameter name="image_height" value="480" />
   <parameter name="image_width" value="640" />
-  <parameter name="start_address" value="402653184" />
+  <parameter name="start_address" value="939524096" />
  </module>
  <module
    name="pixfifo"
@@ -1345,6 +1367,15 @@
  <connection
    kind="avalon"
    version="20.1"
+   start="master_0.avalon_master_1_1"
+   end="address_span_extender_1.windowed_slave">
+  <parameter name="arbitrationPriority" value="1" />
+  <parameter name="baseAddress" value="0x38000000" />
+  <parameter name="defaultConnection" value="false" />
+ </connection>
+ <connection
+   kind="avalon"
+   version="20.1"
    start="master_0.avalon_master_data_1"
    end="l1d.slave">
   <parameter name="arbitrationPriority" value="1" />
@@ -1364,7 +1395,7 @@
    kind="avalon"
    version="20.1"
    start="pixdma.avalon_pixel_dma_master"
-   end="address_span_extender_0.windowed_slave">
+   end="hps_0.f2h_sdram0_data">
   <parameter name="arbitrationPriority" value="1" />
   <parameter name="baseAddress" value="0x0000" />
   <parameter name="defaultConnection" value="false" />
@@ -1373,6 +1404,15 @@
    kind="avalon"
    version="20.1"
    start="address_span_extender_0.expanded_master"
+   end="hps_0.f2h_sdram0_data">
+  <parameter name="arbitrationPriority" value="1" />
+  <parameter name="baseAddress" value="0x0000" />
+  <parameter name="defaultConnection" value="false" />
+ </connection>
+ <connection
+   kind="avalon"
+   version="20.1"
+   start="address_span_extender_1.expanded_master"
    end="hps_0.f2h_sdram0_data">
   <parameter name="arbitrationPriority" value="1" />
   <parameter name="baseAddress" value="0x0000" />
@@ -1462,6 +1502,15 @@
   <parameter name="defaultConnection" value="false" />
  </connection>
  <connection
+   kind="avalon"
+   version="20.1"
+   start="jtag_dbg.master"
+   end="address_span_extender_1.windowed_slave">
+  <parameter name="arbitrationPriority" value="1" />
+  <parameter name="baseAddress" value="0x38000000" />
+  <parameter name="defaultConnection" value="false" />
+ </connection>
+ <connection
    kind="avalon_streaming"
    version="20.1"
    start="pixfifo.avalon_dc_buffer_source"
@@ -1503,6 +1552,11 @@
    start="pll_0.outclk0"
    end="address_span_extender_0.clock" />
  <connection kind="clock" version="20.1" start="pll_0.outclk0" end="i2c_0.clock" />
+ <connection
+   kind="clock"
+   version="20.1"
+   start="pll_0.outclk0"
+   end="address_span_extender_1.clock" />
  <connection
    kind="clock"
    version="20.1"
@@ -1609,6 +1663,11 @@
    version="20.1"
    start="clk_0.clk_reset"
    end="buttons.reset" />
+ <connection
+   kind="reset"
+   version="20.1"
+   start="clk_0.clk_reset"
+   end="address_span_extender_1.reset" />
  <connection
    kind="reset"
    version="20.1"

@@ -16,8 +16,9 @@ reset:
 imm sp, 0x00002000
 
 ! Configura ADV7513 a través de host I2C
-imm r1, 0x3008000 ! TFR_CMD
-imm r2, 0x272     ! 0x72 | STA
+! https://github.com/nhasbun/de10nano_vgaHdmi_chip
+imm r1, 0x30080000 ! TFR_CMD
+imm r2, 0x2e4     ! STA | ADR=0x72, escritura
 
 imm r3, 0x098
 imm r4, 0x103
@@ -204,9 +205,14 @@ stw [r1], r2
 stw [r1], r3
 stw [r1], r4
 
+bal setup
+endpool
+
 !equ START_BUTTON, 0x30050000       Dirección de memoria del botón
 !equ START, 0x00010000              Dirección de memoria de los pixeles
 !equ VRAM, 0x38000000 
+
+setup:
 
 imm t0, 0x00002000
 mov t1, zero

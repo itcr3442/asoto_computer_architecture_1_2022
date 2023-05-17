@@ -28,7 +28,7 @@ buffer = sys.stdin.buffer.read()
 pool_start = len(buffer)
 
 next_comment = ''
-while loc + 2 <= pool_start:
+while loc + 2 <= len(buffer):
     insn = int.from_bytes(buffer[loc:loc + 2], 'little')
 
     add, comment, next_comment, args = None, next_comment, '', []
