@@ -41,6 +41,14 @@
          type = "int";
       }
    }
+   element i2c_0
+   {
+      datum _sortIndex
+      {
+         value = "19";
+         type = "int";
+      }
+   }
    element intc_0
    {
       datum _sortIndex
@@ -278,6 +286,11 @@
    type="conduit"
    dir="end" />
  <interface name="clk" internal="clk_0.clk_in" type="clock" dir="end" />
+ <interface
+   name="i2c_0_i2c_serial"
+   internal="i2c_0.i2c_serial"
+   type="conduit"
+   dir="end" />
  <interface name="master_0_conduit_end" internal="master_0.conduit_end" />
  <interface
    name="master_0_core"
@@ -872,7 +885,13 @@
   <parameter name="usb_mp_clk_div" value="0" />
   <parameter name="use_default_mpu_clk" value="true" />
  </module>
+ <module name="i2c_0" kind="altera_avalon_i2c" version="20.1" enabled="1">
+  <parameter name="FIFO_DEPTH" value="4" />
+  <parameter name="USE_AV_ST" value="0" />
+  <parameter name="clockRate" value="50000000" />
+ </module>
  <module name="intc_0" kind="intc" version="1.0" enabled="1">
+  <parameter name="AUTO_INTERRUPT_I2C_INTERRUPTS_USED" value="1" />
   <parameter name="AUTO_INTERRUPT_JTAGUART_INTERRUPTS_USED" value="1" />
   <parameter name="AUTO_INTERRUPT_TIMER_INTERRUPTS_USED" value="1" />
  </module>
@@ -1282,6 +1301,15 @@
    kind="avalon"
    version="20.1"
    start="master_0.avalon_master_1_1"
+   end="i2c_0.csr">
+  <parameter name="arbitrationPriority" value="1" />
+  <parameter name="baseAddress" value="0x30080000" />
+  <parameter name="defaultConnection" value="false" />
+ </connection>
+ <connection
+   kind="avalon"
+   version="20.1"
+   start="master_0.avalon_master_1_1"
    end="pio_0.s1">
   <parameter name="arbitrationPriority" value="1" />
   <parameter name="baseAddress" value="0x30010000" />
@@ -1386,6 +1414,11 @@
   <parameter name="baseAddress" value="0x30070000" />
   <parameter name="defaultConnection" value="false" />
  </connection>
+ <connection kind="avalon" version="20.1" start="jtag_dbg.master" end="i2c_0.csr">
+  <parameter name="arbitrationPriority" value="1" />
+  <parameter name="baseAddress" value="0x30080000" />
+  <parameter name="defaultConnection" value="false" />
+ </connection>
  <connection kind="avalon" version="20.1" start="jtag_dbg.master" end="pio_0.s1">
   <parameter name="arbitrationPriority" value="1" />
   <parameter name="baseAddress" value="0x30010000" />
@@ -1469,6 +1502,7 @@
    version="20.1"
    start="pll_0.outclk0"
    end="address_span_extender_0.clock" />
+ <connection kind="clock" version="20.1" start="pll_0.outclk0" end="i2c_0.clock" />
  <connection
    kind="clock"
    version="20.1"
@@ -1506,6 +1540,13 @@
    version="20.1"
    start="video_pll_0.vga_clk"
    end="pixfifo.clock_stream_out" />
+ <connection
+   kind="interrupt"
+   version="20.1"
+   start="intc_0.interrupt_i2c"
+   end="i2c_0.interrupt_sender">
+  <parameter name="irqNumber" value="0" />
+ </connection>
  <connection
    kind="interrupt"
    version="20.1"
@@ -1583,6 +1624,11 @@
    version="20.1"
    start="clk_0.clk_reset"
    end="l1d.reset_sink" />
+ <connection
+   kind="reset"
+   version="20.1"
+   start="clk_0.clk_reset"
+   end="i2c_0.reset_sink" />
  <connection
    kind="reset"
    version="20.1"
