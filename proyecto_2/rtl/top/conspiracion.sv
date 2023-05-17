@@ -7,6 +7,8 @@ module conspiracion
 	input  wire        halt,
 	output wire        cpu_halted,
 
+	inout  wire        i2c_serial_sda,
+	inout  wire        i2c_serial_scl,
 	output wire [12:0] memory_mem_a,
 	output wire [2:0]  memory_mem_ba,
 	output wire        memory_mem_ck,
@@ -23,16 +25,6 @@ module conspiracion
 	output wire        memory_mem_odt,
 	output wire        memory_mem_dm,
 	input  wire        memory_oct_rzqin,
-	output wire        vram_wire_clk,
-	output wire [12:0] vram_wire_addr,
-	output wire [1:0]  vram_wire_ba,
-	output wire        vram_wire_cas_n,
-	output wire        vram_wire_cke,
-	output wire        vram_wire_cs_n,
-	inout  wire [15:0] vram_wire_dq,
-	output wire [1:0]  vram_wire_dqm,
-	output wire        vram_wire_ras_n,
-	output wire        vram_wire_we_n,
 	output wire [7:0]  pio_leds,
 	input  wire 	   pio_buttons,
 	input  wire [5:0]  pio_switches,
@@ -130,6 +122,10 @@ module conspiracion
 	);
 `endif
 
+	logic i2c_serial_sda_oe, i2c_serial_scl_oe;
+	assign i2c_serial_sda = i2c_serial_sda_oe ? 1'b0 : 1'bz;
+	assign i2c_serial_scl = i2c_serial_scl_oe ? 1'b0 : 1'bz;
+
 	platform plat
 	(
 		.master_0_core_cpu_clk(cpu_clk),
@@ -158,7 +154,7 @@ module conspiracion
 		.switches_external_connection_export({2'b00, pio_switches}),
 		//TODO: glitch rst
 		.buttons_external_connection_export({7'b0000000, !button}),
-		.sys_sdram_pll_0_sdram_clk_clk(vram_wire_clk),
+		.sys_sdram_pll_0_sdram_clk_clk(), //TODO
 		.vga_dac_CLK(vga_dac_clk),
 		.vga_dac_HS(vga_dac_hsync),
 		.vga_dac_VS(vga_dac_vsync),
@@ -167,6 +163,10 @@ module conspiracion
 		.vga_dac_R(vga_dac_r),
 		.vga_dac_G(vga_dac_g),
 		.vga_dac_B(vga_dac_b),
+		.i2c_0_i2c_serial_sda_in(i2c_serial_sda),
+		.i2c_0_i2c_serial_scl_in(i2c_serial_scl),
+		.i2c_0_i2c_serial_sda_oe(i2c_serial_sda_oe),
+		.i2c_0_i2c_serial_scl_oe(i2c_serial_scl_oe),
 		.*
 	);
 
