@@ -1,13 +1,28 @@
 import socket
 
+
 def csum(data):
     return to_bhex(sum(data) & 0xff)
 
-def to_bhex(data):
-    assert 0 <= data <= 0xff
-    return hex(data)[2:].zfill(2).encode("ascii")
 
-class rsp:    
+def to_nhex(num, size, little=True):
+    return num.to_bytes(
+        size, "little" if little else "big").hex().encode("ascii")
+
+
+def to_bhex(num, little=True):
+    return to_nhex(num, 1, little)
+
+
+def to_qhex(num, little=True):
+    return to_nhex(num, 8, little)
+
+
+def parse_hex(data):
+    return int.from_bytes((bytes.fromhex(str(data, "ascii"))), "little")
+
+
+class rsp:
     def __init__(self):
         self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
         self.s.connect(("127.0.0.1", 1234))
@@ -20,7 +35,7 @@ class rsp:
         need to define a local XML file as well as be talking to a
         reasonably modern gdb. Responding with an empty packet will cause
         the remote gdb to fallback to older methods.
-        
+
         ver: https://github.com/qemu/qemu/blob/master/gdbstub/gdbstub.c
         """
         print(self.ping(b"qXfer:features:read:target.xml:0,1048576"))
@@ -49,7 +64,7 @@ class rsp:
                     assert False
                 case byte:
                     data.extend(byte)
-        
+
         ck = csum(data)
         self.exp_byte(ck[:1])
         self.exp_byte(ck[1:])
@@ -75,8 +90,33 @@ class rsp:
     def rr(self, reg):
         r = self.ping(b"p" + to_bhex(reg))
         assert r and r[:1] != b"E"
-        return int.from_bytes((bytes.fromhex(str(r, "ascii"))), "little")
+        return parse_hex(r)
 
     def wr(self, reg, data):
-        data = data.to_bytes(4, "little").hex().encode("ascii")
+        data = to_qhex(data)
         self.ping_ok(b"P" + to_bhex(reg) + b"=" + data)
+
+    def r(self):
+        r = self.ping(b"g")
+        for i, reg in enumerate(parse_hex(r[n:n + 16])
+                                for n in range(0, len(r), 16)):
+            print(f"{i}: {reg}")
+
+    def rm(self, addr, length):
+        r = self.ping(b"m" + to_qhex(addr, False) +
+                      b"," + to_qhex(length, False))
+        assert (not length or r) and (not r or r[:1] != b"E")
+        return r
+
+    def wm(self, addr, data):
+        self.ping_ok(
+            b"M" +
+            to_qhex(
+                addr,
+                False) +
+            b"," +
+            to_qhex(
+                len(data),
+                False) +
+            b":" +
+            data.hex().encode("ascii"))
