@@ -1,0 +1,2 @@
+ejecutar qemu:
+    
