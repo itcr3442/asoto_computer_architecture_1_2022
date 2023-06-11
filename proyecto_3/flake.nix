@@ -12,7 +12,7 @@
             gcc
             gdb
             gnumake
-            (python39.withPackages (py: [ ]))
+            (python39.withPackages (py: [ py.autopep8 ]))
             qemu
           ];
         };
