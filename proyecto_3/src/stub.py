@@ -167,7 +167,5 @@ class rsp:
 
     def get_insn_info(self, instr):
         op_code = instr.op_code()
-        ops = []
-        for i in range(op_code.op_count):
-            ops.append(op_code_operand_kind_to_string(op_code.op_kind(i)))
+        ops = [op_code_operand_kind_to_string(kind) for kind in instr.op_code().op_kinds()]
         return mnemonic_to_string(instr.mnemonic), ops
