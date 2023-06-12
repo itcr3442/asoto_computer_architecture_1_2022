@@ -117,7 +117,7 @@ class rsp:
     def rip(self):
         return self.rr(16)
 
-    def dbg_step(self):
+    def get_insn(self):
         rip = self.rip()
         """
         El fetch es de tamaño 15 porque:
@@ -128,7 +128,10 @@ class rsp:
 
         ver: https://cdrdv2.intel.com/v1/dl/getContent/671200 sección 2.3.11 
         """
-        fetch = self.rm(rip, 15)   
-        insn = next(Decoder(64, fetch, ip=rip))
+        insn = next(Decoder(64, self.rm(rip, 15), ip=rip))
+        return rip, insn   
+
+    def dbg_step(self):
+        rip, insn = self.get_insn()
         print(f"0x{rip:016x}: {insn}")
         self.s()
