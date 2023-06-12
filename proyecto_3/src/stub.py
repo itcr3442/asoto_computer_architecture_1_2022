@@ -1,5 +1,5 @@
 import socket
-from iced_x86 import Decoder
+
 
 def csum(data):
     return to_bhex(sum(data) & 0xff)
@@ -20,6 +20,7 @@ def to_qhex(num, little=True):
 
 def parse_hex(data):
     return int.from_bytes((bytes.fromhex(str(data, "ascii"))), "little")
+
 
 class rsp:
     def __init__(self):
@@ -119,11 +120,3 @@ class rsp:
 
     def s(self, addr=None):
         r = self.ping(b"s" + (to_qhex(addr, False) if addr is not None else b""), check_err=True)
-
-    def dbg_step(self):
-        rip = self.rr(16)
-        fetch = self.rm(rip, 15)
-        insn = next(Decoder(64, fetch, rip))
-        print(f"0x{rip:016x}: {insn}")
-        self.s()
- 
