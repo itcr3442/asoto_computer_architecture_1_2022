@@ -102,8 +102,9 @@ class rsp:
             print(f"{i}: {reg}")
 
     def rm(self, addr, length):
-        return self.ping(b"m" + to_qhex(addr, False) +
-                         b"," + to_qhex(length, False, check_err=bool(length)))
+        r = self.ping(b"m" + to_qhex(addr, False) +
+                         b"," + to_qhex(length, False), check_err=bool(length))
+        return bytes.fromhex(str(r, "ascii"))
 
     def wm(self, addr, data):
         self.ping_ok(b"M" + to_qhex(addr, False) + b"," +
@@ -127,7 +128,7 @@ class rsp:
 
         ver: https://cdrdv2.intel.com/v1/dl/getContent/671200 sección 2.3.11 
         """
-        fetch = self.rm(rip, 15)
-        insn = next(Decoder(64, fetch, rip))
+        fetch = self.rm(rip, 15)   
+        insn = next(Decoder(64, fetch, ip=rip))
         print(f"0x{rip:016x}: {insn}")
         self.s()
