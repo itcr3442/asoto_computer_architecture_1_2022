@@ -26,7 +26,6 @@ class rsp:
     def __init__(self):
         self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
         self.s.connect(("127.0.0.1", 1234))
-        print(self.rcv())
         """
         Se manda este mensaje porque en handle_set/get_reg:
         Older gdb are really dumb, and don't use 'G/g' if 'P/p' is available.
@@ -45,7 +44,7 @@ class rsp:
         self.s.close()
 
     def snd(self, data):
-        packet = b"$" + data + b"#" + csum(data)
+        packet = b"+$" + data + b"#" + csum(data)
         self.s.sendall(packet)
 
     def rcv(self):
