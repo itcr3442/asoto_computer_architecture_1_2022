@@ -1,7 +1,7 @@
 ! hello world
 bal julian 
 ext 0x1
-mul r4, r7
+mul r4, r4, r7
 bin r15
 soto:
 sys 1
@@ -26,5 +26,12 @@ add r4, r7, r14
 sub r4, r7, r14
 inc r9, 1
 dec r9, 9
-fabian:
-bal fabian
+nop
+imm r4, 15
+mov r3, r4
+neg r3, r3
+rst
+word 0x12345678
+hword 0x12345678
+hlt
+
