@@ -1,5 +1,5 @@
 import socket
-
+from iced_x86 import Decoder
 
 def csum(data):
     return to_bhex(sum(data) & 0xff)
@@ -114,4 +114,20 @@ class rsp:
                       if addr is not None else b""), check_err=True)
 
     def rip(self):
-        return hex(self.rr(16))
+        return self.rr(16)
+
+    def dbg_step(self):
+        rip = self.rip()
+        """
+        El fetch es de tamaño 15 porque:
+        The AVX instructions described in this document (including VEX and 
+        ignoring other prefixes) do not exceed 11 bytes in length, but may 
+        increase in the future. The maximum length of an Intel 64 and IA-32 
+        instruction remains 15 bytes.
+
+        ver: https://cdrdv2.intel.com/v1/dl/getContent/671200 sección 2.3.11 
+        """
+        fetch = self.rm(rip, 15)
+        insn = next(Decoder(64, fetch, rip))
+        print(f"0x{rip:016x}: {insn}")
+        self.s()
