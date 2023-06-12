@@ -113,5 +113,5 @@ class rsp:
         r = self.ping(b"s" + (to_qhex(addr, False)
                       if addr is not None else b""), check_err=True)
 
-    def ip(self):
-        return hex(self.rr(17))
+    def rip(self):
+        return hex(self.rr(16))
