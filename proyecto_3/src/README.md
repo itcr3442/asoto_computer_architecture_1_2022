@@ -3,3 +3,6 @@ ejecutar qemu sin programa
 
 ejecutar qemu:
     qemu-x86_64 -g 1234 benchmark.elf
+
+r16 es el instruction pointer
+r17 son las flags 

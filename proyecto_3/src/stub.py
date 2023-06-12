@@ -24,8 +24,8 @@ def parse_hex(data):
 
 class rsp:
     def __init__(self):
-        self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
-        self.s.connect(("127.0.0.1", 1234))
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
+        self.sock.connect(("127.0.0.1", 1234))
         """
         Se manda este mensaje porque en handle_set/get_reg:
         Older gdb are really dumb, and don't use 'G/g' if 'P/p' is available.
@@ -41,11 +41,11 @@ class rsp:
 
     def close(self):
         self.ping_ok(b"D")
-        self.s.close()
+        self.sock.close()
 
     def snd(self, data):
         packet = b"+$" + data + b"#" + csum(data)
-        self.s.sendall(packet)
+        self.sock.sendall(packet)
 
     def rcv(self):
         while True:
@@ -70,9 +70,11 @@ class rsp:
 
         return bytes(data)
 
-    def ping(self, data):
+    def ping(self, data, *, check_err=False):
         self.snd(data)
-        return self.rcv()
+        r = self.rcv()
+        assert not check_err or (r and r[:1] != b"E")
+        return r
 
     def ping_ok(self, data):
         assert self.ping(data) == b"OK"
@@ -83,13 +85,11 @@ class rsp:
         assert data == byte, f"{repr(data)} != {repr(byte)}"
 
     def rcv_byte(self):
-        data = self.s.recv(1)
+        data = self.sock.recv(1)
         return data
 
     def rr(self, reg):
-        r = self.ping(b"p" + to_bhex(reg))
-        assert r and r[:1] != b"E"
-        return parse_hex(r)
+        return parse_hex(self.ping(b"p" + to_bhex(reg), check_err=True))
 
     def wr(self, reg, data):
         data = to_qhex(data)
@@ -102,10 +102,8 @@ class rsp:
             print(f"{i}: {reg}")
 
     def rm(self, addr, length):
-        r = self.ping(b"m" + to_qhex(addr, False) +
-                      b"," + to_qhex(length, False))
-        assert (not length or r) and (not r or r[:1] != b"E")
-        return r
+        return self.ping(b"m" + to_qhex(addr, False) +
+                      b"," + to_qhex(length, False, check_err=bool(length)))
 
     def wm(self, addr, data):
         self.ping_ok(
@@ -119,3 +117,6 @@ class rsp:
                 False) +
             b":" +
             data.hex().encode("ascii"))
+
+    def s(self, addr=None):
+        r = self.ping(b"s" + (to_qhex(addr, False) if addr is not None else b""), check_err=True)
