@@ -16,3 +16,6 @@ $(TARGET): $(OBJS)
 
 clean:
 	rm -f $(TARGET) $(OBJS)
+
+test: clean $(TARGET)
+	./$(TARGET)

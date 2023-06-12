@@ -1,6 +1,6 @@
 #include <stdio.h>
 
-void main(void) {
+int main(void) {
     int sum = 0;
 
     int a[4][4] = {
@@ -123,5 +123,7 @@ void main(void) {
     sum += result[3][3];
 
     printf("%d\n", sum);
+
+    return 0;
 }
 
