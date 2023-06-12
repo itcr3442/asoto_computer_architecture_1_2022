@@ -9,6 +9,7 @@ OBJS := $(SRCS:.c=.o)
 
 $(TARGET): $(OBJS)
 	$(CC) $(CFLAGS) -o $@ $^
+	rm -f $(OBJS)
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
