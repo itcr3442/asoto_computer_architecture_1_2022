@@ -1,16 +1,14 @@
 from enum import Enum
-import stub
 
 class cpu:
     def __init__(self):
-        scheduler = stub.rsp()
-        cycles = 0
-        alus = 2
-        branches = 2
-        stacks = 2
-        noops = 2
-        specials = 2
-        insns = {
+        self.cycles = 0
+        self.alus = 2
+        self.branches = 2
+        self.stacks = 2
+        self.noops = 2
+        self.specials = 2
+        self.insns = {
             "sub"    : ("alu", 1),
             "mov"    : ("alu", 1),
             "test"   : ("alu", 1),
@@ -35,7 +33,7 @@ class cpu:
             "jne"    : ("branch", 3),
             "push"   : ("stack", 1),
             "pop"    : ("stack", 1),
-            "leav"   : ("stack", 2)
+            "leav"   : ("stack", 2),
             "nopl"   : ("noop", 1),
             "cs nopw": ("noop", 1),
             "nopw"   : ("noop", 1),

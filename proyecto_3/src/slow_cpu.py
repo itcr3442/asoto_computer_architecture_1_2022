@@ -1,19 +1,20 @@
 import uarch
+import stub
 
+scheduler = stub.rsp()
 cpu = uarch.cpu()
 
 try:
     while True:
-        rip, insn = cpu.scheduler.get_insn()
+        rip, insn = scheduler.get_insn()
         print(f"0x{rip:016x}: {insn}")
         
         try:
             unit, latency = cpu.insns[insn]
-            return value
         except KeyError:
-            print("Invalid instruction: {insn}")
+            print(f"Invalid instruction: {insn}")
             break
         
-        cpu.s()
+        scheduler.s()
 finally:
-    cpu.close()
+    scheduler.close()
