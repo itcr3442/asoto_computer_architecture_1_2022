@@ -103,20 +103,15 @@ class rsp:
 
     def rm(self, addr, length):
         return self.ping(b"m" + to_qhex(addr, False) +
-                      b"," + to_qhex(length, False, check_err=bool(length)))
+                         b"," + to_qhex(length, False, check_err=bool(length)))
 
     def wm(self, addr, data):
-        self.ping_ok(
-            b"M" +
-            to_qhex(
-                addr,
-                False) +
-            b"," +
-            to_qhex(
-                len(data),
-                False) +
-            b":" +
-            data.hex().encode("ascii"))
+        self.ping_ok(b"M" + to_qhex(addr, False) + b"," +
+                     to_qhex(len(data), False) + b":" + data.hex().encode("ascii"))
 
     def s(self, addr=None):
-        r = self.ping(b"s" + (to_qhex(addr, False) if addr is not None else b""), check_err=True)
+        r = self.ping(b"s" + (to_qhex(addr, False)
+                      if addr is not None else b""), check_err=True)
+
+    def ip(self):
+        return hex(self.rr(17))
