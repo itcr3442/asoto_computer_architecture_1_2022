@@ -1,7 +1,7 @@
 # Makefile
 
 CC := gcc
-CFLAGS := -O0
+CFLAGS := -O0 -g
 
 TARGET := benchmark.elf
 SRCS := benchmark.c
