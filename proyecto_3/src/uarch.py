@@ -1,6 +1,9 @@
 from enum import Enum
 import stub
 
+def gen_search_str(mnemonic, op_kinds):
+    return f"{mnemonic}, {op_kinds}"
+
 class cpu:
     def __init__(self):
         self.master = stub.rsp()

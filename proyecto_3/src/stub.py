@@ -30,6 +30,12 @@ https://github.com/icedland/iced/blob/master/src/rust/iced-x86-py/README.md#get-
 def create_enum_dict(module: ModuleType) -> Dict[int, str]:
     return {module.__dict__[key]:key for key in module.__dict__ if isinstance(module.__dict__[key], int)}
 
+MNEMONIC_TO_STRING: Dict[Mnemonic_, str] = create_enum_dict(Mnemonic)
+def mnemonic_to_string(value: Mnemonic_) -> str:
+    s = MNEMONIC_TO_STRING.get(value)
+    if s is None:
+        return str(value) + " /*Mnemonic enum*/"
+    return s
 
 OP_CODE_OPERAND_KIND_TO_STRING: Dict[OpCodeOperandKind_, str] = create_enum_dict(OpCodeOperandKind)
 def op_code_operand_kind_to_string(value: OpCodeOperandKind_) -> str:
@@ -159,9 +165,9 @@ class rsp:
         print(f"0x{rip:016x}: {insn}")
         self.s()
 
-    def get_insn_opkinds(self, instr):
+    def get_insn_info(self, instr):
         op_code = instr.op_code()
         ops = []
         for i in range(op_code.op_count):
             ops.append(op_code_operand_kind_to_string(op_code.op_kind(i)))
-        return ops
+        return mnemonic_to_string(instr.mnemonic), ops

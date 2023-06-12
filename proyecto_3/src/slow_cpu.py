@@ -5,9 +5,11 @@ cpu = uarch.cpu()
 try:
     while True:
         rip, insn = cpu.master.get_insn()
-        print(f"0x{rip:016x}: {insn}")
+        #print(f"0x{rip:016x}: {insn}")
 
-        print(cpu.master.get_insn_opkinds(insn))
+        key = uarch.gen_search_str(*cpu.master.get_insn_info(insn))
+
+        print(key)
 
         #try:
         #    unit, latency = cpu.insns[insn.mnemonic]
