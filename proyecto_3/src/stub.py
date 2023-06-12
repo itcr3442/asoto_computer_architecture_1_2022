@@ -1,5 +1,7 @@
 import socket
-from iced_x86 import Decoder
+from iced_x86 import *
+from typing import Dict, Sequence
+from types import ModuleType
 
 def csum(data):
     return to_bhex(sum(data) & 0xff)
@@ -21,6 +23,27 @@ def to_qhex(num, little=True):
 def parse_hex(data):
     return int.from_bytes((bytes.fromhex(str(data, "ascii"))), "little")
 
+"""
+Estos tres métodos de abajo fueron tomados de:
+https://github.com/icedland/iced/blob/master/src/rust/iced-x86-py/README.md#get-instruction-info-eg-readwritten-regsmem-control-flow-info-etc
+"""
+def create_enum_dict(module: ModuleType) -> Dict[int, str]:
+    return {module.__dict__[key]:key for key in module.__dict__ if isinstance(module.__dict__[key], int)}
+
+
+OP_CODE_OPERAND_KIND_TO_STRING: Dict[OpCodeOperandKind_, str] = create_enum_dict(OpCodeOperandKind)
+def op_code_operand_kind_to_string(value: OpCodeOperandKind_) -> str:
+    s = OP_CODE_OPERAND_KIND_TO_STRING.get(value)
+    if s is None:
+        return str(value) + " /*OpCodeOperandKind enum*/"
+    return s
+
+OP_ACCESS_TO_STRING: Dict[OpAccess_, str] = create_enum_dict(OpAccess)
+def op_access_to_string(value: OpAccess_) -> str:
+    s = OP_ACCESS_TO_STRING.get(value)
+    if s is None:
+        return str(value) + " /*OpAccess enum*/"
+    return s
 
 class rsp:
     def __init__(self):
@@ -135,3 +158,10 @@ class rsp:
         rip, insn = self.get_insn()
         print(f"0x{rip:016x}: {insn}")
         self.s()
+
+    def get_insn_opkinds(self, instr):
+        op_code = instr.op_code()
+        ops = []
+        for i in range(op_code.op_count):
+            ops.append(op_code_operand_kind_to_string(op_code.op_kind(i)))
+        return ops

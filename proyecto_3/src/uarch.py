@@ -1,13 +1,17 @@
 from enum import Enum
+import stub
 
 class cpu:
     def __init__(self):
+        self.master = stub.rsp()
         self.cycles = 0
+
         self.alus = 2
         self.branches = 2
         self.stacks = 2
         self.noops = 2
         self.specials = 2
+
         self.insns = {
             "sub r,r/i"     : ("alu", 1),
             "sub r,m"       : ("alu", 1),
