@@ -95,7 +95,7 @@ class ReservedUnit:
             for reg, value in self.rd_values.items():
                 cpu.master.wr(iced2gdb(reg), value)
 
-            cpu.master.s(self.insn.rip)
+            cpu.master.s(self.insn.ip)
             
             self.wr_values = {
                 reg: cpu.master.rr(iced2gdb(reg)) for reg in self.wr 
@@ -116,7 +116,7 @@ try:
             if not unit.tick(cbd):
                 to_remove.add(unit)
                 
-                for reg, value in unit.wr_values:
+                for reg, value in unit.wr_values.items():
                     next_cbd[unit.wr[reg]] = value
 
                     if reg in unit.commit:
@@ -125,7 +125,7 @@ try:
         cbd = next_cbd
         units.difference_update(to_remove)
         
-        for reg, value in to_commit:
+        for reg, value in to_commit.items():
             cpu.master.wr(iced2gdb(reg), value)
             wr_regs[reg] = None
 
@@ -142,7 +142,7 @@ try:
                 rd = {}
                 wr = {}
                 for reg in InstructionInfoFactory().info(issue).used_registers():
-                    num = RegisterInfo(reg.register).full_register()
+                    num = RegisterInfo(reg.register).full_register
                     match reg.access:
                         case OpAccess.READ:
                             is_rd = True
@@ -195,5 +195,5 @@ try:
 
 finally:
     cpu.master.close()
-    print("CPU without dynamic scheduler done.")
-    print(f"Execution took: {cpu.cycles} cycles.")
+    print("CPU with dynamic scheduler done.")
+    print(f"Execution took: {cycles} cycles.")

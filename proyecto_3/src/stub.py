@@ -118,7 +118,6 @@ class rsp:
 
     def ping_ok(self, data):
         assert self.ping(data) == b"OK"
-        print(b"OK")
 
     def exp_byte(self, byte):
         data = self.rcv_byte()

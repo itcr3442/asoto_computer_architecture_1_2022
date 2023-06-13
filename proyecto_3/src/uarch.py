@@ -5,7 +5,7 @@ def gen_search_str(mnemonic, op_types, op_kinds):
     return f"{mnemonic}, {op_types}, {op_kinds}"
 
 class Functional_Units:
-    def __init__(self, alus=2, branches=2, loads=2, stores=2, muls=2) :
+    def __init__(self, alus=4, branches=2, loads=2, stores=4, muls=3) :
         self.alus = alus
         self.branches = branches
         self.loads = loads
@@ -21,7 +21,7 @@ class Functional_Units:
                     self.alus -= 1
                     return True
 
-            case "banch":
+            case "branch":
                 if self.branches <= 0:
                     return False
                 else:
