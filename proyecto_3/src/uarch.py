@@ -5,40 +5,48 @@ def gen_search_str(mnemonic, op_types, op_kinds):
     return f"{mnemonic}, {op_types}, {op_kinds}"
 
 class Functional_Units:
-    def __init__(self, alus=2, branches=2, loads=2, stores=2) :
+    def __init__(self, alus=2, branches=2, loads=2, stores=2, muls=2) :
         self.alus = alus
         self.branches = branches
         self.loads = loads
         self.stores = stores
+        self.muls = muls
 
-    def lock_unit(self, unit):
+    def lock(self, unit):
         match unit:
             case "alu":
-                if self.alus < 0:
+                if self.alus <= 0:
                     return False
                 else:
                     self.alus -= 1
                     return True
 
             case "banch":
-                if self.branches < 0:
+                if self.branches <= 0:
                     return False
                 else:
                     self.branches -= 1
                     return True
 
             case "load":
-                if self.loads < 0:
+                if self.loads <= 0:
                     return False
                 else:
                     self.loads -= 1
                     return True
 
             case "store":
-                if self.stores < 0:
+                if self.stores <= 0:
                     return False
                 else:
                     self.stores -= 1
+                    return True
+
+            case "mul":
+                if self.muls <= 0:
+                    return False
+                else:
+                    self.muls -= 1
                     return True
 
             case _:
@@ -277,9 +285,3 @@ class Cpu:
             "VPOR, ['YMM_REG', 'YMM_VVVV', 'YMM_OR_MEM']"     : ("alu", 1), #?
             "PSHUFD, ['XMM_REG', 'XMM_OR_MEM', 'IMM8']"       : ("alu", 1)
         }
-
-    def attempt(self, unit, latency):
-        if self.units.lock_unit(unit):
-            self.cycles += latency
-        else:
-            pass

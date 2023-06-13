@@ -1,28 +1,199 @@
 import uarch
+from iced_x86 import *
 
 cpu = uarch.Cpu()
 
+fetch = None
+decode = None
+issue = None
+fetch_rip = cpu.master.rip()
+cycles = 0
+next_rename = 0
+wr_regs = {}
+units = set()
+cbd = {}
+
+def iced2gdb(iced_reg):
+    match iced_reg:
+        case Register.RAX:
+            return 0
+        case Register.RBX:
+            return 1
+        case Register.RCX:
+            return 2
+        case Register.RDX:
+            return 3
+        case Register.RSI:
+            return 4
+        case Register.RDI:
+            return 5
+        case Register.RBP:
+            return 6
+        case Register.RSP:
+            return 7
+        case Register.R8:
+            return 8
+        case Register.R9:
+            return 9
+        case Register.R10:
+            return 10
+        case Register.R11:
+            return 11
+        case Register.R12:
+            return 12
+        case Register.R13:
+            return 13
+        case Register.R14:
+            return 14
+        case Register.R15:
+            return 15
+        case "flags":
+            return 17
+
+class ReservedUnit:
+    def __init__(self, insn, latency, *, rd, wr):
+        self.insn = insn
+        self.latency = latency
+        self.rd = rd
+        self.wr = wr
+        self.ops_ready = False
+        self.wr_values = {}
+        self.rd_values = {}
+        self.commit = set(self.wr)
+    
+    def uncommit(self, reg):
+        if reg in self.commit:
+            self.commit.remove(reg)
+
+    def tick(self, cdb):
+
+        if not self.ops_ready:
+            self.ops_ready = True
+            for reg, renamed in self.rd.items():
+                if reg in self.rd_values:
+                    continue
+
+                if renamed is not None:
+                    value = cdb.get(renamed)
+                else:
+                    value = cpu.master.rr(iced2gdb(reg))
+
+                if value is not None:
+                    self.rd_values[reg] = value
+                else:
+                    self.ops_ready = False
+
+        if self.ops_ready and self.latency:
+            self.latency -= 1
+            return True
+
+        if not self.latency:
+            saved = {
+                reg: cpu.master.rr(iced2gdb(reg)) for reg in list(self.rd) + list(self.wr) 
+            }
+
+            for reg, value in self.rd_values.items():
+                cpu.master.wr(iced2gdb(reg), value)
+
+            cpu.master.s(self.insn.rip)
+            
+            self.wr_values = {
+                reg: cpu.master.rr(iced2gdb(reg)) for reg in self.wr 
+            }
+
+            for reg, value in saved.items():
+                cpu.master.wr(iced2gdb(reg), value)
+        
+        return bool(self.latency)
+
 try:
     while True:
-        rip, insn = cpu.master.get_insn()
-        key = uarch.gen_search_str(*cpu.master.get_insn_info(insn))
+        to_remove = set()
+        to_commit = {}
+        next_cbd = {}
 
-        # solo imprimir nuestro programa
-        if (0x0000000000401080 <= rip < 0x00000000004011a0) or (0x0000000000401290 <= rip < 0x0000000000401d64):
-            print(f"0x{rip:016x}: {insn}")
+        for unit in units:
+            if not unit.tick(cbd):
+                to_remove.add(unit)
+                
+                for reg, value in unit.wr_values:
+                    next_cbd[unit.wr[reg]] = value
 
-        try:
-            unit, latency = cpu.insns[key]
-            if cpu.units.lock(unit):
-                cpu.cycles += latency
-            else:
-                cpu.wait_for(unit)
-        except KeyError:
-            print(f"Invalid instruction: {insn}")
-            break
+                    if reg in unit.commit:
+                        to_commit[reg] = value
 
-        if not cpu.master.s():
-            break
+        cbd = next_cbd
+        units.difference_update(to_remove)
+        
+        for reg, value in to_commit:
+            cpu.master.wr(iced2gdb(reg), value)
+            wr_regs[reg] = None
+
+        stall_issue = False
+
+        if issue:
+            key = uarch.gen_search_str(*cpu.master.get_insn_info(insn))
+            info = cpu.insns.get(key)
+            if not info:
+                assert False, "todo"
+            unit, latency = info
+            stall_issue = cpu.units.lock(unit)
+            if not stall_issue:
+                rd = {}
+                wr = {}
+                for reg in InstructionInfoFactory().info(issue).used_registers():
+                    num = RegisterInfo(reg.register).full_register()
+                    match reg.access:
+                        case OpAccess.READ:
+                            is_rd = True
+                            is_wr = False
+
+                        case OpAccess.WRITE | OpAccess.COND_WRITE:
+                            is_rd = False
+                            is_wr = True
+
+                        case OpAccess.READ_WRITE | OpAccess.COND_READ_COND_WRITE:
+                            is_rd = True
+                            is_wr = True
+
+                        case _:
+                            continue
+
+                    if is_rd:
+                        rd[num] = wr_regs.get(num)
+
+                    if is_wr:
+                        wr[num] = None
+
+                if issue.rflags_read:
+                    rd["flags"] = wr_regs.get("flags")
+
+                if issue.rflags_written:
+                    wr["flags"] = None
+                
+                for reg in wr:
+                    wr[reg] = wr_regs[reg] = next_rename
+                    next_rename = (next_rename + 1) & 0xffff
+                
+                    for unit in units:
+                        unit.uncommit(reg)
+
+                units.add(ReservedUnit(issue, latency, rd=rd, wr=wr))
+
+
+
+
+        if not stall_issue:
+            issue = decode
+        
+        if not stall_issue or not decode:
+            decode = fetch
+        
+        if not stall_issue or not fetch or not decode:
+            fetch = cpu.master.get_insn(fetch_rip)
+            fetch_rip += fetch.len
+
+        cycles += 1
 
 finally:
     cpu.master.close()

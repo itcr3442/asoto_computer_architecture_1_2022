@@ -161,8 +161,7 @@ class rsp:
     def rip(self):
         return self.rr(16)
 
-    def get_insn(self):
-        rip = self.rip()
+    def get_insn(self, rip):
         """
         El fetch es de tamaño 15 porque:
         The AVX instructions described in this document (including VEX and 
@@ -172,8 +171,7 @@ class rsp:
 
         ver: https://cdrdv2.intel.com/v1/dl/getContent/671200 sección 2.3.11 
         """
-        insn = next(Decoder(64, self.rm(rip, 15), ip=rip))
-        return rip, insn   
+        return next(Decoder(64, self.rm(rip, 15), ip=rip))
 
     def dbg_step(self):
         rip, insn = self.get_insn()
