@@ -1,25 +1,23 @@
 import uarch
 
-cpu = uarch.cpu()
+cpu = uarch.Cpu()
 
 try:
     while True:
         rip, insn = cpu.master.get_insn()
-        #print(f"0x{rip:016x}: {insn}")
+        print(f"0x{rip:016x}: {insn}")
 
         key = uarch.gen_search_str(*cpu.master.get_insn_info(insn))
 
-        print(key)
-
-        #try:
-        #    unit, latency = cpu.insns[insn.mnemonic]
-        #    cpu.cycles += latency
-#
-        #except KeyError:
-        #    print(f"Invalid instruction: {insn}")
-        #    break
+        try:
+            _, latency = cpu.insns[key]
+            cpu.cycles += latency
+        except KeyError:
+            print(f"Invalid instruction: {insn}")
+            break
 
         cpu.master.s()
 finally:
-    print(cpu.cycles)
     cpu.master.close()
+    print("CPU without dynamic scheduler took done.")
+    print(f"Execution took: {cpu.cycles}")
