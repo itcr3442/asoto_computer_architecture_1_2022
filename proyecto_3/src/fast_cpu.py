@@ -10,8 +10,8 @@ try:
         key = uarch.gen_search_str(*cpu.master.get_insn_info(insn))
 
         try:
-            _, latency = cpu.insns[key]
-            cpu.cycles += latency
+            unit, latency = cpu.insns[key]
+            cpu.attempt(unit, latency)
         except KeyError:
             print(f"Invalid instruction: {insn}")
             break
@@ -20,4 +20,4 @@ try:
 finally:
     cpu.master.close()
     print("CPU without dynamic scheduler done.")
-    print(f"Execution took: {cpu.cycles} cycles.")
+    print(f"Execution took: {cpu.cycles} cycles")

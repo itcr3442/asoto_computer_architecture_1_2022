@@ -4,18 +4,52 @@ import stub
 def gen_search_str(mnemonic, op_kinds):
     return f"{mnemonic}, {op_kinds}"
 
-class cpu:
+class Functional_Units:
+    def __init__(self, alus=2, branches=2, loads=2, stores=2) :
+        self.alus = alus
+        self.branches = branches
+        self.loads = loads
+        self.stores = stores
+
+    def lock_unit(self, unit):
+        match unit:
+            case "alu":
+                if self.alus < 0:
+                    return False
+                else:
+                    self.alus -= 1
+                    return True
+
+            case "banch":
+                if self.branches < 0:
+                    return False
+                else:
+                    self.branches -= 1
+                    return True
+
+            case "load":
+                if self.loads < 0:
+                    return False
+                else:
+                    self.loads -= 1
+                    return True
+
+            case "store":
+                if self.stores < 0:
+                    return False
+                else:
+                    self.stores -= 1
+                    return True
+
+            case _:
+                raise ValueError(f"No funcional unit: {unit}")
+
+class Cpu:
     def __init__(self):
         self.master = stub.rsp()
         self.cycles = 0
 
-        self.alus = 2
-        self.branches = 2
-        self.stacks = 2
-        self.noops = 2
-        self.specials = 2
-        self.loads = 2
-        self.stores = 2
+        self.units = Functional_Units()
 
         self.insns = {
             "MOV, ['R64_OR_MEM', 'R64_REG']"       : ("alu", 3),
@@ -243,3 +277,9 @@ class cpu:
             "VPOR, ['YMM_REG', 'YMM_VVVV', 'YMM_OR_MEM']"     : ("alu", 1), #?
             "PSHUFD, ['XMM_REG', 'XMM_OR_MEM', 'IMM8']"       : ("alu", 1)
         }
+
+    def attempt(self, unit, latency):
+        if self.units.lock_unit(unit):
+            self.cycles += latency
+        else:
+            pass
