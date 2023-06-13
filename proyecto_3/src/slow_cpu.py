@@ -5,12 +5,12 @@ cpu = uarch.Cpu()
 try:
     while True:
         rip, insn = cpu.master.get_insn()
+        key = uarch.gen_search_str(*cpu.master.get_insn_info(insn))
 
         # solo imprimir nuestro programa
         if (0x0000000000401080 <= rip < 0x00000000004011a0) or (0x0000000000401290 <= rip < 0x0000000000401d64):
             #print(f"0x{rip:016x}: {insn}")
-            print(cpu.master.rm(rip, 15))
-        key = uarch.gen_search_str(*cpu.master.get_insn_info(insn))
+            print(key)
 
         try:
             _, latency = cpu.insns[key]
