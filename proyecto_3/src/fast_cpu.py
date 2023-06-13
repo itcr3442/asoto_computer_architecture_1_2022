@@ -196,12 +196,13 @@ try:
                     flush_frontend = True
                     next_serialize = True
 
-            if not next_serialize:
-                unit, latency = info
+            unit, latency = info if info else (None, 0)
+            if latency and not next_serialize:
                 stall_issue = cpu.units.lock(unit)
                 if not stall_issue:
                     rd = {}
                     wr = {}
+
                     for reg in InstructionInfoFactory().info(issue).used_registers():
                         num = RegisterInfo(reg.register).full_register
                         match reg.access:
