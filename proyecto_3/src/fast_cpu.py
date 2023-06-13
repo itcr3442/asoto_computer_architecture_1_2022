@@ -77,11 +77,12 @@ def iced2gdb(reg):
             assert False, f'bad iced_x86 reg {reg} during OoOE'
 
 class ReservedUnit:
-    def __init__(self, insn, latency, *, rd, wr, control_hazard=False):
+    def __init__(self, insn, latency, *, rd, wr, ty, control_hazard=False):
         self.insn = insn
         self.latency = latency
         self.rd = rd
         self.wr = wr
+        self.ty = ty
         self.control_hazard = control_hazard
 
         self.ops_ready = False
@@ -146,8 +147,9 @@ try:
         for unit in units:
             if not unit.tick(cbd):
                 to_remove.add(unit)
-                retired += 1
+                cpu.unlock_unit(unit.ty)
 
+                retired += 1
                 if unit.control_hazard:
                     flush_frontend = False
                     branch_target = cpu.master.rip()
@@ -205,9 +207,9 @@ try:
                     flush_frontend = True
                     next_serialize = True
 
-            unit, latency = info if info else (None, 0)
+            ty, latency = info if info else (None, 0)
             if latency and not next_serialize:
-                stall_issue = cpu.units.lock(unit)
+                stall_issue = not cpu.lock_unit(ty)
                 if not stall_issue:
                     rd = {}
                     wr = {}
@@ -250,7 +252,7 @@ try:
                             unit.uncommit(reg)
 
                     units.add(ReservedUnit(issue, latency, rd=rd, wr=wr,
-                                           control_hazard=flush_frontend))
+                                           ty=ty, control_hazard=flush_frontend))
 
                     if flush_frontend:
                         fetch = decode = None
