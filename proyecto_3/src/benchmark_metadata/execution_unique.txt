@@ -1,0 +1,271 @@
+add eax,1
+add eax,edi
+add r10d,8
+add r12,[rbx+48h]
+add rdi,rbx
+add rsp,8
+and eax,0FFFFFFF8h
+and esi,7
+and r9,0FFFFFFFFFFFFFFF8h
+bswap r12
+call 0000000000401030h
+call 0000000000401290h
+call 0000000000401990h
+call 00000000004019E0h
+call 0000000000401A70h
+cmp eax,40h
+cmp eax,8
+cmp edi,2
+cmp edi,38h
+cmp esi,1
+cmp esi,2
+cmp esi,3
+cmp esi,4
+cmp r10d,eax
+cmp r10d,edi
+cmp r12d,37h
+cmp rdx,r12
+jae near ptr 0000000000401AC0h
+jae near ptr 0000000000401C20h
+ja near ptr 0000000000401BD8h
+jb near ptr 0000000000401AC0h
+jb short 0000000000401A00h
+je short 00000000004010BAh
+je short 0000000000401A30h
+je short 0000000000401A60h
+je short 0000000000401AC0h
+je short 0000000000401CAFh
+je short 0000000000401CBAh
+je short 0000000000401CC5h
+je short 0000000000401CD0h
+je short 0000000000401CE4h
+lea edi,[r12+1]
+lea edx,[rbp+1]
+lea esi,[rax-1]
+lea r9,[rdi+8]
+lea rbp,[rsp+20h]
+lea rdi,[rsp-4Ch]
+mov byte ptr [rbx+rax],80h
+mov dword ptr [rdi+40h],0
+mov eax,37h
+mov eax,r10d
+mov eax,r12d
+mov eax,r15d
+mov eax,[rdi+40h]
+mov ebx,12h
+mov ecx,eax
+mov ecx,r10d
+mov edi,eax
+mov esi,r10d
+mov qword ptr [r9+r8],0
+mov qword ptr [rdi],0
+mov qword ptr [rdi+48h],0
+mov qword ptr [rdi+rcx-8],0
+mov r10d,8
+mov r11d,esi
+mov r11d,r10d
+mov r12d,[rdi+40h]
+mov r12,[rbx+8]
+mov r12,rdx
+mov r13d,r15d
+mov r13,rsi
+mov r14,rdi
+mov r8d,ecx
+mov r9d,ecx
+mov [r9+r11],r8
+mov [r9+rax],r8
+mov [r9+rcx],r8
+mov [r9+rsi],r8
+mov rax,0BB67AE856A09E667h
+mov rax,rsi
+mov rbp,rdx
+mov rbp,rsi
+mov [rbx+38h],r12
+mov [rbx+40h],eax
+mov [rbx+48h],r12
+mov [rbx+rcx],sil
+mov rbx,rdi
+mov rbx,rsi
+mov rbx,rsp
+mov rcx,9B05688C510E527Fh
+mov [rdi+50h],rax
+mov [rdi+58h],rdx
+mov [rdi+60h],rcx
+mov [rdi+68h],rsi
+mov rdi,r12
+mov rdi,rbp
+mov rdi,rbx
+mov rdx,0A54FF53A3C6EF372h
+mov rdx,rax
+mov rsi,5BE0CD191F83D9ABh
+mov rsi,r12
+mov rsi,rbx
+mov rsi,rsp
+mov [rsp-24h],ecx
+mov [rsp-28h],r9d
+mov [rsp-2Ch],ecx
+mov [rsp-30h],r12d
+mov [rsp-34h],ebp
+mov [rsp-38h],r13d
+mov [rsp-3Ch],r8d
+mov [rsp-40h],ecx
+mov [rsp-44h],r11d
+mov [rsp-48h],ebp
+mov [rsp-4Ch],r13d
+mov [rsp-50h],edx
+mov [rsp-54h],esi
+mov [rsp-58h],r10d
+movzx eax,byte ptr [rax+3Eh]
+movzx ebp,byte ptr [rax+10h]
+movzx ebp,byte ptr [rax+19h]
+movzx ebp,byte ptr [rax+24h]
+movzx ebp,byte ptr [rax+7]
+movzx ebx,byte ptr [rax+0Eh]
+movzx ebx,byte ptr [rax+1Bh]
+movzx ebx,byte ptr [rax+22h]
+movzx ebx,byte ptr [rax+2Fh]
+movzx ebx,byte ptr [rax+37h]
+movzx ebx,byte ptr [rax+3Fh]
+movzx ebx,byte ptr [rsi+2]
+movzx ecx,byte ptr [rax+0Dh]
+movzx ecx,byte ptr [rax+18h]
+movzx ecx,byte ptr [rax+21h]
+movzx ecx,byte ptr [rax+2Ch]
+movzx ecx,byte ptr [rax+34h]
+movzx ecx,byte ptr [rax+38h]
+movzx ecx,byte ptr [rsi+3]
+movzx edi,byte ptr [rax+13h]
+movzx edi,byte ptr [rax+1Ah]
+movzx edi,byte ptr [rax+27h]
+movzx edi,byte ptr [rax+2Dh]
+movzx edi,byte ptr [rax+35h]
+movzx edi,byte ptr [rax+3Dh]
+movzx edi,byte ptr [rax+4]
+movzx edx,byte ptr [rax+8]
+movzx edx,byte ptr [rsi]
+movzx esi,byte ptr [r13+rdx]
+movzx esi,byte ptr [rsi+5]
+movzx r10d,byte ptr [rsi+1]
+movzx r11d,byte ptr [rax+14h]
+movzx r11d,byte ptr [rax+1Dh]
+movzx r11d,byte ptr [rax+2Bh]
+movzx r11d,byte ptr [rax+33h]
+movzx r11d,byte ptr [rax+39h]
+movzx r11d,byte ptr [rax+9]
+movzx r12d,byte ptr [rax+0Ah]
+movzx r12d,byte ptr [rax+17h]
+movzx r12d,byte ptr [rax+1Eh]
+movzx r12d,byte ptr [rax+28h]
+movzx r13d,byte ptr [rax+0Ch]
+movzx r13d,byte ptr [rax+15h]
+movzx r13d,byte ptr [rax+20h]
+movzx r13d,byte ptr [rax+29h]
+movzx r13d,byte ptr [rax+31h]
+movzx r13d,byte ptr [rax+3Ah]
+movzx r15d,byte ptr [rax+0Fh]
+movzx r15d,byte ptr [rax+16h]
+movzx r15d,byte ptr [rax+23h]
+movzx r15d,byte ptr [rax+2Ah]
+movzx r15d,byte ptr [rax+32h]
+movzx r15d,byte ptr [rax+3Ch]
+movzx r8d,byte ptr [rax+11h]
+movzx r8d,byte ptr [rax+1Ch]
+movzx r8d,byte ptr [rax+25h]
+movzx r8d,byte ptr [rax+2Eh]
+movzx r8d,byte ptr [rax+36h]
+movzx r8d,byte ptr [rax+6]
+movzx r9d,byte ptr [rax+0Bh]
+movzx r9d,byte ptr [rax+12h]
+movzx r9d,byte ptr [rax+1Fh]
+movzx r9d,byte ptr [rax+26h]
+movzx r9d,byte ptr [rax+30h]
+movzx r9d,byte ptr [rax+3Bh]
+nop
+or ebp,edi
+or ebp,r8d
+or ebp,r9d
+or ecx,ebp
+or ecx,ebx
+or ecx,edi
+or ecx,r11d
+or ecx,r13d
+or ecx,r8d
+or ecx,r9d
+or edx,r11d
+or edx,r12d
+or edx,r9d
+or esi,ebp
+or esi,edi
+or esi,r8d
+or r10d,ebx
+or r10d,ecx
+or r10d,edx
+or r11d,r12d
+or r11d,r13d
+or r11d,r15d
+or r12d,r11d
+or r12d,r13d
+or r12d,r15d
+or r13d,ebx
+or r13d,ecx
+or r13d,r15d
+or r15d,eax
+or r15d,ebx
+or r15d,edi
+or r8d,r11d
+or r8d,r12d
+or r8d,r9d
+or r9d,r11d
+or r9d,r13d
+or r9d,r15d
+pop r12
+pop r13
+pop rbp
+pop rbx
+push r12
+push r13
+push r14
+push r15
+push rbp
+push rbx
+ret
+rol r8d,0Fh
+shl eax,8
+shl ebp,10h
+shl ebp,18h
+shl ebx,8
+shl ecx,10h
+shl ecx,18h
+shl edi,10h
+shl edi,18h
+shl edi,8
+shl edx,18h
+shl esi,10h
+shl r10d,10h
+shl r11d,10h
+shl r11d,18h
+shl r12d,18h
+shl r12d,3
+shl r12d,8
+shl r13d,10h
+shl r13d,18h
+shl r13d,8
+shl r15d,18h
+shl r15d,8
+shl r8d,10h
+shl r8d,18h
+shl r8d,8
+shl r9d,18h
+shl r9d,8
+shr esi,3
+shr r11d,3
+sub eax,r12d
+sub rdi,r9
+sub rsp,0B0h
+sub rsp,8
+sub rsp,90h
+test esi,esi
+test rdx,rdx
+xor ebp,ebp
+xor edx,edx
+xor r8d,r8d
