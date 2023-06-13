@@ -1,0 +1,40 @@
+alu:
+    add
+    and
+    bswap
+    not
+    or
+    rol
+    ror
+    shl
+    shr
+    sub
+    cmp
+    test
+    xor
+    mov
+    movzx
+
+branch:
+    call
+    ja
+    jae
+    jb
+    je
+    jmp
+    jne
+    ret
+
+load:
+    lea
+    mov
+    movzx
+    pop
+
+store:
+    mov
+    movzx
+    push
+
+mul:
+    mul

@@ -1,5 +1,7 @@
 import socket
-
+from iced_x86 import *
+from typing import Dict, Sequence
+from types import ModuleType
 
 def csum(data):
     return to_bhex(sum(data) & 0xff)
@@ -21,6 +23,40 @@ def to_qhex(num, little=True):
 def parse_hex(data):
     return int.from_bytes((bytes.fromhex(str(data, "ascii"))), "little")
 
+"""
+Estos tres métodos de abajo fueron tomados de:
+https://github.com/icedland/iced/blob/master/src/rust/iced-x86-py/README.md#get-instruction-info-eg-readwritten-regsmem-control-flow-info-etc
+"""
+def create_enum_dict(module: ModuleType) -> Dict[int, str]:
+    return {module.__dict__[key]:key for key in module.__dict__ if isinstance(module.__dict__[key], int)}
+
+MNEMONIC_TO_STRING: Dict[Mnemonic_, str] = create_enum_dict(Mnemonic)
+def mnemonic_to_string(value: Mnemonic_) -> str:
+    s = MNEMONIC_TO_STRING.get(value)
+    if s is None:
+        return str(value) + " /*Mnemonic enum*/"
+    return s
+
+OP_KIND_TO_STRING: Dict[OpKind_, str] = create_enum_dict(OpKind)
+def op_kind_to_string(value: OpKind_) -> str:
+    s = OP_KIND_TO_STRING.get(value)
+    if s is None:
+        return str(value) + " /*OpKind enum*/"
+    return s
+
+OP_CODE_OPERAND_KIND_TO_STRING: Dict[OpCodeOperandKind_, str] = create_enum_dict(OpCodeOperandKind)
+def op_code_operand_kind_to_string(value: OpCodeOperandKind_) -> str:
+    s = OP_CODE_OPERAND_KIND_TO_STRING.get(value)
+    if s is None:
+        return str(value) + " /*OpCodeOperandKind enum*/"
+    return s
+
+OP_ACCESS_TO_STRING: Dict[OpAccess_, str] = create_enum_dict(OpAccess)
+def op_access_to_string(value: OpAccess_) -> str:
+    s = OP_ACCESS_TO_STRING.get(value)
+    if s is None:
+        return str(value) + " /*OpAccess enum*/"
+    return s
 
 class rsp:
     def __init__(self):
@@ -39,9 +75,13 @@ class rsp:
         """
         print(self.ping(b"qXfer:features:read:target.xml:0,1048576"))
 
-    def close(self):
-        self.ping_ok(b"D")
-        self.sock.close()
+    def close(self, *, detach=True):
+        if self.sock:
+            if detach:
+                self.ping_ok(b"D")
+
+            self.sock.close()
+            self.sock = None
 
     def snd(self, data):
         packet = b"+$" + data + b"#" + csum(data)
@@ -78,7 +118,6 @@ class rsp:
 
     def ping_ok(self, data):
         assert self.ping(data) == b"OK"
-        print(b"OK")
 
     def exp_byte(self, byte):
         data = self.rcv_byte()
@@ -102,21 +141,44 @@ class rsp:
             print(f"{i}: {reg}")
 
     def rm(self, addr, length):
-        return self.ping(b"m" + to_qhex(addr, False) +
-                      b"," + to_qhex(length, False, check_err=bool(length)))
+        r = self.ping(b"m" + to_qhex(addr, False) +
+                         b"," + to_qhex(length, False), check_err=bool(length))
+        return bytes.fromhex(str(r, "ascii"))
 
     def wm(self, addr, data):
-        self.ping_ok(
-            b"M" +
-            to_qhex(
-                addr,
-                False) +
-            b"," +
-            to_qhex(
-                len(data),
-                False) +
-            b":" +
-            data.hex().encode("ascii"))
+        self.ping_ok(b"M" + to_qhex(addr, False) + b"," +
+                     to_qhex(len(data), False) + b":" + data.hex().encode("ascii"))
 
     def s(self, addr=None):
-        r = self.ping(b"s" + (to_qhex(addr, False) if addr is not None else b""), check_err=True)
+        r = self.ping(b"s" + (to_qhex(addr, False)
+                      if addr is not None else b""), check_err=True)
+        exited = r[:1] == b"W"
+        if exited:
+            self.close(detach=False)
+        return not exited
+
+    def rip(self):
+        return self.rr(16)
+
+    def get_insn(self, rip):
+        """
+        El fetch es de tamaño 15 porque:
+        The AVX instructions described in this document (including VEX and 
+        ignoring other prefixes) do not exceed 11 bytes in length, but may 
+        increase in the future. The maximum length of an Intel 64 and IA-32 
+        instruction remains 15 bytes.
+
+        ver: https://cdrdv2.intel.com/v1/dl/getContent/671200 sección 2.3.11 
+        """
+        return next(Decoder(64, self.rm(rip, 15), ip=rip))
+
+    def dbg_step(self):
+        rip, insn = self.get_insn()
+        print(f"0x{rip:016x}: {insn}")
+        return self.s()
+
+    def get_insn_info(self, instr):
+        op_code = instr.op_code()
+        op_types = [op_kind_to_string(instr.op_kind(i)) for i in range(instr.op_count)]
+        op_kinds = [op_code_operand_kind_to_string(kind) for kind in instr.op_code().op_kinds()]
+        return mnemonic_to_string(instr.mnemonic), op_types, op_kinds
