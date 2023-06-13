@@ -7,6 +7,6 @@ def remove_duplicates(input_file, output_file):
                 file_out.write(line + "\n")
                 lines_seen.add(line)
 
-input_file_path = "unique_keys.txt"
-output_file_path = "tmp.txt"
+input_file_path = "keys.txt"
+output_file_path = "unique_keys.txt"
 remove_duplicates(input_file_path, output_file_path)
