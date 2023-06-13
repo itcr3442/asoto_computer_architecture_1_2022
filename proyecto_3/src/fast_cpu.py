@@ -132,10 +132,10 @@ try:
         stall_issue = False
 
         if issue:
-            key = uarch.gen_search_str(*cpu.master.get_insn_info(insn))
+            key = uarch.gen_search_str(*cpu.master.get_insn_info(issue))
             info = cpu.insns.get(key)
             if not info:
-                assert False, "todo"
+                assert False, f"{key}"
             unit, latency = info
             stall_issue = cpu.units.lock(unit)
             if not stall_issue:
@@ -180,9 +180,6 @@ try:
 
                 units.add(ReservedUnit(issue, latency, rd=rd, wr=wr))
 
-
-
-
         if not stall_issue:
             issue = decode
         
@@ -192,6 +189,7 @@ try:
         if not stall_issue or not fetch or not decode:
             fetch = cpu.master.get_insn(fetch_rip)
             fetch_rip += fetch.len
+            print(f"{fetch}")
 
         cycles += 1
 
