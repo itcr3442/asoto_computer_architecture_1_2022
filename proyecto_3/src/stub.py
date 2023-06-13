@@ -180,8 +180,8 @@ class rsp:
         print(f"0x{rip:016x}: {insn}")
         return self.s()
 
-
     def get_insn_info(self, instr):
         op_code = instr.op_code()
-        ops = [op_kind_to_string(instr.op_kind(i)) for i in range(instr.op_count)]
-        return mnemonic_to_string(instr.mnemonic), ops
+        op_types = [op_kind_to_string(instr.op_kind(i)) for i in range(instr.op_count)]
+        op_kinds = [op_code_operand_kind_to_string(kind) for kind in instr.op_code().op_kinds()]
+        return mnemonic_to_string(instr.mnemonic), op_types, op_kinds

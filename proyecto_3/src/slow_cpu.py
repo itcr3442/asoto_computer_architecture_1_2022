@@ -9,8 +9,7 @@ try:
 
         # solo imprimir nuestro programa
         if (0x0000000000401080 <= rip < 0x00000000004011a0) or (0x0000000000401290 <= rip < 0x0000000000401d64):
-            #print(f"0x{rip:016x}: {insn}")
-            print(key)
+            print(f"0x{rip:016x}: {insn}")
 
         try:
             _, latency = cpu.insns[key]
