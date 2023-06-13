@@ -21,6 +21,8 @@ wr_regs = {}
 units = set()
 cbd = {}
 
+top_serials = {}
+
 def iced2gdb(reg):
     match reg:
         case Register.RAX:
@@ -157,6 +159,9 @@ try:
         if serialize and not units:
             print('Serial', issue)
 
+            serial_key = repr(issue.op_code())
+            top_serials[serial_key] = top_serials.get(serial_key, 0) + 1
+
             retired += 1
             if not cpu.master.s(issue.ip):
                 break
@@ -269,3 +274,8 @@ finally:
     cpu.master.close()
     print("CPU with dynamic scheduler done.")
     print(f"Executed {retired} insns in {cycles} cycles.")
+
+print('Top serials:')
+top_serials = sorted(top_serials.items(), key=lambda t: t[1], reverse=True)
+for i in range(min(20, len(top_serials))):
+    print(f'{top_serials[i][1]:05} {top_serials[i][0]}')
