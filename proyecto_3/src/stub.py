@@ -68,9 +68,13 @@ class rsp:
         """
         print(self.ping(b"qXfer:features:read:target.xml:0,1048576"))
 
-    def close(self):
-        self.ping_ok(b"D")
-        self.sock.close()
+    def close(self, *, detach=True):
+        if self.sock:
+            if detach:
+                self.ping_ok(b"D")
+
+            self.sock.close()
+            self.sock = None
 
     def snd(self, data):
         packet = b"+$" + data + b"#" + csum(data)
@@ -142,6 +146,10 @@ class rsp:
     def s(self, addr=None):
         r = self.ping(b"s" + (to_qhex(addr, False)
                       if addr is not None else b""), check_err=True)
+        exited = r[:1] == b"W"
+        if exited:
+            self.close(detach=False)
+        return not exited
 
     def rip(self):
         return self.rr(16)
@@ -163,7 +171,8 @@ class rsp:
     def dbg_step(self):
         rip, insn = self.get_insn()
         print(f"0x{rip:016x}: {insn}")
-        self.s()
+        return self.s()
+
 
     def get_insn_info(self, instr):
         op_code = instr.op_code()
