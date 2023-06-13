@@ -3,12 +3,19 @@ from iced_x86 import *
 
 cpu = uarch.Cpu()
 
+cycles = 0
+retired = 0
+
 fetch = None
 decode = None
 issue = None
-serialize = False
+
 fetch_rip = None
-cycles = 0
+branch_target = None
+
+serialize = False
+flush_frontend = False
+
 next_rename = 0
 wr_regs = {}
 units = set()
@@ -58,11 +65,13 @@ def iced2gdb(reg):
             assert False, f'bad iced_x86 reg {reg} during OoOE'
 
 class ReservedUnit:
-    def __init__(self, insn, latency, *, rd, wr):
+    def __init__(self, insn, latency, *, rd, wr, control_hazard=False):
         self.insn = insn
         self.latency = latency
         self.rd = rd
         self.wr = wr
+        self.control_hazard = control_hazard
+
         self.ops_ready = False
         self.wr_values = {}
         self.rd_values = {}
@@ -128,7 +137,12 @@ try:
         for unit in units:
             if not unit.tick(cbd):
                 to_remove.add(unit)
-                
+                retired += 1
+
+                if unit.control_hazard:
+                    flush_frontend = False
+                    branch_target = cpu.master.rip()
+
                 for reg, value in unit.wr_values.items():
                     next_cbd[unit.wr[reg]] = value
 
@@ -142,10 +156,13 @@ try:
         next_serialize = serialize
         if serialize and not units:
             print('Serial', issue)
+
+            retired += 1
             if not cpu.master.s(issue.ip):
                 break
 
             issue = None
+            flush_frontend = False
             next_serialize = False
 
         cbd = next_cbd
@@ -157,13 +174,24 @@ try:
             key = uarch.gen_search_str(*cpu.master.get_insn_info(issue))
             info = cpu.insns.get(key)
 
-            if not info or issue.flow_control != FlowControl.NEXT:
-                fetch = decode = None
-                fetch_rip = None
+            match (bool(info), issue.flow_control):
+                case (True, FlowControl.NEXT):
+                    flush_frontend = False
 
-                stall_issue = True
-                next_serialize = True
-            else:
+                case (True, FlowControl.UNCONDITIONAL_BRANCH | FlowControl.CONDITIONAL_BRANCH
+                          | FlowControl.CALL | FlowControl.RETURN
+                          | FlowControl.INDIRECT_CALL | FlowControl.INDIRECT_BRANCH):
+                    flush_frontend = True
+
+                case _:
+                    fetch = decode = None
+                    fetch_rip = None
+
+                    stall_issue = True
+                    flush_frontend = True
+                    next_serialize = True
+
+            if not next_serialize:
                 unit, latency = info
                 stall_issue = cpu.units.lock(unit)
                 if not stall_issue:
@@ -206,30 +234,38 @@ try:
                         for unit in units:
                             unit.uncommit(reg)
 
-                    units.add(ReservedUnit(issue, latency, rd=rd, wr=wr))
+                    units.add(ReservedUnit(issue, latency, rd=rd, wr=wr,
+                                           control_hazard=flush_frontend))
+
+                    if flush_frontend:
+                        fetch = decode = None
+                        fetch_rip = None
 
         if not serialize and not stall_issue:
-            issue = decode
-        
-        if not serialize and (not stall_issue or not decode):
-            decode = fetch
-        
-        if not serialize and (not stall_issue or not fetch or not decode):
-            if not fetch_rip:
-                fetch_rip = cpu.master.rip()
+            issue = decode if not flush_frontend else None
 
-            fetch = cpu.master.get_insn(fetch_rip)
-            fetch_rip += fetch.len
+        if not flush_frontend:
+            if not stall_issue or not decode:
+                decode = fetch
+            
+            if not stall_issue or not decode or not fetch:
+                if not fetch_rip:
+                    fetch_rip = branch_target or cpu.master.rip()
+                    if branch_target:
+                        print(f'Jump {branch_target:016x}')
+                        branch_target = None
 
-            print(f'Fetch', fetch)
+                fetch = cpu.master.get_insn(fetch_rip)
+                print(f'Fetch', fetch)
 
-        serialize = next_serialize
-        if next_serialize:
+                fetch_rip += fetch.len
+        else:
             fetch = decode = None
             fetch_rip = None
 
+        serialize = next_serialize
         cycles += 1
 finally:
     cpu.master.close()
     print("CPU with dynamic scheduler done.")
-    print(f"Execution took: {cycles} cycles.")
+    print(f"Executed {retired} insns in {cycles} cycles.")
