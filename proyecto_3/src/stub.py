@@ -37,6 +37,13 @@ def mnemonic_to_string(value: Mnemonic_) -> str:
         return str(value) + " /*Mnemonic enum*/"
     return s
 
+OP_KIND_TO_STRING: Dict[OpKind_, str] = create_enum_dict(OpKind)
+def op_kind_to_string(value: OpKind_) -> str:
+    s = OP_KIND_TO_STRING.get(value)
+    if s is None:
+        return str(value) + " /*OpKind enum*/"
+    return s
+
 OP_CODE_OPERAND_KIND_TO_STRING: Dict[OpCodeOperandKind_, str] = create_enum_dict(OpCodeOperandKind)
 def op_code_operand_kind_to_string(value: OpCodeOperandKind_) -> str:
     s = OP_CODE_OPERAND_KIND_TO_STRING.get(value)
@@ -176,5 +183,5 @@ class rsp:
 
     def get_insn_info(self, instr):
         op_code = instr.op_code()
-        ops = [op_code_operand_kind_to_string(kind) for kind in instr.op_code().op_kinds()]
+        ops = [op_kind_to_string(instr.op_kind(i)) for i in range(instr.op_count)]
         return mnemonic_to_string(instr.mnemonic), ops
