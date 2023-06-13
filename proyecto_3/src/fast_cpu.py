@@ -22,6 +22,16 @@ units = set()
 cbd = {}
 
 top_serials = {}
+total_serials = 0
+
+last_cycles = None
+def log(op, insn):
+    global last_cycles
+
+    time = f'{"...":8}' if last_cycles == cycles else f'#{cycles:07}'
+    print(f'{time} [{op:9}] {insn.ip:016x}   {insn}')
+
+    last_cycles = cycles
 
 def iced2gdb(reg):
     match reg:
@@ -100,15 +110,14 @@ class ReservedUnit:
                 else:
                     self.ops_ready = False
 
-            if self.ops_ready:
-                print('Ready', self.insn)
-
         if self.ops_ready and self.latency:
+            log(f'Execute:{self.latency}', self.insn)
+
             self.latency -= 1
             return True
 
         if not self.latency:
-            print('Writeback', self.insn)
+            log('Retire', self.insn)
 
             saved = {
                 reg: cpu.master.rr(iced2gdb(reg)) for reg in list(self.rd) + list(self.wr) 
@@ -130,8 +139,6 @@ class ReservedUnit:
 
 try:
     while True:
-        print(f'Start {cycles}')
-
         to_remove = set()
         to_commit = {}
         next_cbd = {}
@@ -157,12 +164,14 @@ try:
 
         next_serialize = serialize
         if serialize and not units:
-            print('Serial', issue)
+            log('Serial', issue)
 
-            serial_key = repr(issue.op_code())
+            serial_key = repr(cpu.master.get_insn_info(issue))
             top_serials[serial_key] = top_serials.get(serial_key, 0) + 1
 
             retired += 1
+            total_serials += 1
+
             if not cpu.master.s(issue.ip):
                 break
 
@@ -247,6 +256,8 @@ try:
                         fetch = decode = None
                         fetch_rip = None
 
+                    log('Issue', issue)
+
         if not serialize and not stall_issue:
             issue = decode if not flush_frontend else None
 
@@ -257,12 +268,10 @@ try:
             if not stall_issue or not decode or not fetch:
                 if not fetch_rip:
                     fetch_rip = branch_target or cpu.master.rip()
-                    if branch_target:
-                        print(f'Jump {branch_target:016x}')
-                        branch_target = None
+                    branch_target = None
 
                 fetch = cpu.master.get_insn(fetch_rip)
-                print(f'Fetch', fetch)
+                log('Fetch', fetch)
 
                 fetch_rip += fetch.len
         else:
@@ -276,7 +285,9 @@ finally:
     print("CPU with dynamic scheduler done.")
     print(f"Executed {retired} insns in {cycles} cycles.")
 
-print('Top serials:')
+print('\nTotal serializing insns:', total_serials)
+print('Top 25 serializing insns:')
+
 top_serials = sorted(top_serials.items(), key=lambda t: t[1], reverse=True)
-for i in range(min(20, len(top_serials))):
+for i in range(min(25, len(top_serials))):
     print(f'{top_serials[i][1]:05} {top_serials[i][0]}')
