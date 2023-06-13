@@ -1,8 +1,8 @@
 from enum import Enum
 import stub
 
-def gen_search_str(mnemonic, op_kinds):
-    return f"{mnemonic}, {op_kinds}"
+def gen_search_str(mnemonic, op_types, op_kinds):
+    return f"{mnemonic}, {op_types}, {op_kinds}"
 
 class Functional_Units:
     def __init__(self, alus=2, branches=2, loads=2, stores=2) :
