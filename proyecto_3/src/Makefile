@@ -1,10 +1,10 @@
 # Makefile
 
 CC := gcc
-CFLAGS := -O0 -g
+CFLAGS := -O3 -g -fno-tree-vectorize -funroll-all-loops
 
 TARGET := benchmark.elf
-SRCS := benchmark.c
+SRCS := benchmark.c sha256.c
 OBJS := $(SRCS:.c=.o)
 
 $(TARGET): $(OBJS)
