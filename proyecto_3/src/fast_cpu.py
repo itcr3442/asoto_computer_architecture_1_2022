@@ -6,15 +6,16 @@ cpu = uarch.Cpu()
 fetch = None
 decode = None
 issue = None
-fetch_rip = cpu.master.rip()
+serialize = False
+fetch_rip = None
 cycles = 0
 next_rename = 0
 wr_regs = {}
 units = set()
 cbd = {}
 
-def iced2gdb(iced_reg):
-    match iced_reg:
+def iced2gdb(reg):
+    match reg:
         case Register.RAX:
             return 0
         case Register.RBX:
@@ -49,6 +50,12 @@ def iced2gdb(iced_reg):
             return 15
         case "flags":
             return 17
+        case Register.FS:
+            return 22
+        case Register.GS:
+            return 23
+        case _:
+            assert False, f'bad iced_x86 reg {reg} during OoOE'
 
 class ReservedUnit:
     def __init__(self, insn, latency, *, rd, wr):
@@ -66,7 +73,6 @@ class ReservedUnit:
             self.commit.remove(reg)
 
     def tick(self, cdb):
-
         if not self.ops_ready:
             self.ops_ready = True
             for reg, renamed in self.rd.items():
@@ -83,11 +89,16 @@ class ReservedUnit:
                 else:
                     self.ops_ready = False
 
+            if self.ops_ready:
+                print('Ready', self.insn)
+
         if self.ops_ready and self.latency:
             self.latency -= 1
             return True
 
         if not self.latency:
+            print('Writeback', self.insn)
+
             saved = {
                 reg: cpu.master.rr(iced2gdb(reg)) for reg in list(self.rd) + list(self.wr) 
             }
@@ -108,6 +119,8 @@ class ReservedUnit:
 
 try:
     while True:
+        print(f'Start {cycles}')
+
         to_remove = set()
         to_commit = {}
         next_cbd = {}
@@ -122,77 +135,100 @@ try:
                     if reg in unit.commit:
                         to_commit[reg] = value
 
-        cbd = next_cbd
-        units.difference_update(to_remove)
-        
         for reg, value in to_commit.items():
             cpu.master.wr(iced2gdb(reg), value)
             wr_regs[reg] = None
 
-        stall_issue = False
+        next_serialize = serialize
+        if serialize and not units:
+            print('Serial', issue)
+            if not cpu.master.s(issue.ip):
+                break
 
-        if issue:
+            issue = None
+            next_serialize = False
+
+        cbd = next_cbd
+        units.difference_update(to_remove)
+        
+        stall_issue = serialize
+
+        if issue and not serialize:
             key = uarch.gen_search_str(*cpu.master.get_insn_info(issue))
             info = cpu.insns.get(key)
-            if not info:
-                assert False, f"{key}"
-            unit, latency = info
-            stall_issue = cpu.units.lock(unit)
-            if not stall_issue:
-                rd = {}
-                wr = {}
-                for reg in InstructionInfoFactory().info(issue).used_registers():
-                    num = RegisterInfo(reg.register).full_register
-                    match reg.access:
-                        case OpAccess.READ:
-                            is_rd = True
-                            is_wr = False
 
-                        case OpAccess.WRITE | OpAccess.COND_WRITE:
-                            is_rd = False
-                            is_wr = True
+            if not info or issue.flow_control != FlowControl.NEXT:
+                fetch = decode = None
+                fetch_rip = None
 
-                        case OpAccess.READ_WRITE | OpAccess.COND_READ_COND_WRITE:
-                            is_rd = True
-                            is_wr = True
+                stall_issue = True
+                next_serialize = True
+            else:
+                unit, latency = info
+                stall_issue = cpu.units.lock(unit)
+                if not stall_issue:
+                    rd = {}
+                    wr = {}
+                    for reg in InstructionInfoFactory().info(issue).used_registers():
+                        num = RegisterInfo(reg.register).full_register
+                        match reg.access:
+                            case OpAccess.READ:
+                                is_rd = True
+                                is_wr = False
 
-                        case _:
-                            continue
+                            case OpAccess.WRITE | OpAccess.COND_WRITE:
+                                is_rd = False
+                                is_wr = True
 
-                    if is_rd:
-                        rd[num] = wr_regs.get(num)
+                            case OpAccess.READ_WRITE | OpAccess.COND_READ_COND_WRITE:
+                                is_rd = True
+                                is_wr = True
 
-                    if is_wr:
-                        wr[num] = None
+                            case _:
+                                continue
 
-                if issue.rflags_read:
-                    rd["flags"] = wr_regs.get("flags")
+                        if is_rd:
+                            rd[num] = wr_regs.get(num)
 
-                if issue.rflags_written:
-                    wr["flags"] = None
-                
-                for reg in wr:
-                    wr[reg] = wr_regs[reg] = next_rename
-                    next_rename = (next_rename + 1) & 0xffff
-                
-                    for unit in units:
-                        unit.uncommit(reg)
+                        if is_wr:
+                            wr[num] = None
 
-                units.add(ReservedUnit(issue, latency, rd=rd, wr=wr))
+                    if issue.rflags_read:
+                        rd["flags"] = wr_regs.get("flags")
 
-        if not stall_issue:
+                    if issue.rflags_written:
+                        wr["flags"] = None
+                    
+                    for reg in wr:
+                        wr[reg] = wr_regs[reg] = next_rename
+                        next_rename = (next_rename + 1) & 0xffff
+                    
+                        for unit in units:
+                            unit.uncommit(reg)
+
+                    units.add(ReservedUnit(issue, latency, rd=rd, wr=wr))
+
+        if not serialize and not stall_issue:
             issue = decode
         
-        if not stall_issue or not decode:
+        if not serialize and (not stall_issue or not decode):
             decode = fetch
         
-        if not stall_issue or not fetch or not decode:
+        if not serialize and (not stall_issue or not fetch or not decode):
+            if not fetch_rip:
+                fetch_rip = cpu.master.rip()
+
             fetch = cpu.master.get_insn(fetch_rip)
             fetch_rip += fetch.len
-            print(f"{fetch}")
+
+            print(f'Fetch', fetch)
+
+        serialize = next_serialize
+        if next_serialize:
+            fetch = decode = None
+            fetch_rip = None
 
         cycles += 1
-
 finally:
     cpu.master.close()
     print("CPU with dynamic scheduler done.")
