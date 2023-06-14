@@ -6,6 +6,9 @@ cpu = uarch.Cpu()
 cycles = 0
 retired = 0
 
+main_cycles = 0
+main_retired = 0
+
 fetch = None
 decode = None
 issue = None
@@ -32,6 +35,9 @@ def log(op, insn):
     print(f'{time} [{op:9}] {insn.ip:016x}   {insn}')
 
     last_cycles = cycles
+
+def in_main(insn):
+    return insn and 0x401080 <= insn.ip < 0x401f60
 
 def iced2gdb(reg):
     match reg:
@@ -144,12 +150,20 @@ try:
         to_commit = {}
         next_cbd = {}
 
+        in_main_cycles = False
+
         for unit in units:
+            unit_in_main = in_main(unit.insn)
+            in_main_cycles = in_main_cycles or unit_in_main
+
             if not unit.tick(cbd):
                 to_remove.add(unit)
                 cpu.unlock_unit(unit.ty)
 
                 retired += 1
+                if unit_in_main:
+                    main_retired += 1
+
                 if unit.control_hazard:
                     flush_frontend = False
                     branch_target = cpu.master.rip()
@@ -173,6 +187,8 @@ try:
 
             retired += 1
             total_serials += 1
+            if in_main(unit.insn):
+                main_retired += 1
 
             if not cpu.master.s(issue.ip):
                 break
@@ -183,7 +199,9 @@ try:
 
         cbd = next_cbd
         units.difference_update(to_remove)
-        
+
+        in_main_cycles = in_main_cycles or in_main(fetch) or in_main(decode) or in_main(issue)
+
         stall_issue = serialize
 
         if issue and not serialize:
@@ -282,10 +300,13 @@ try:
 
         serialize = next_serialize
         cycles += 1
+
+        if in_main_cycles:
+            main_cycles += 1
 finally:
     cpu.master.close()
     print("CPU with dynamic scheduler done.")
-    print(f"Executed {retired} insns in {cycles} cycles.")
+    print(f"Executed {main_retired} ({retired}) insns in {main_cycles} ({cycles}) cycles.")
 
 print('\nTotal serializing insns:', total_serials)
 print('Top 25 serializing insns:')
