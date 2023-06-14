@@ -88,6 +88,7 @@ class ReservedUnit:
     def tick(self):
         if self.latency:
             log(f'Execute:{self.latency}', self.insn)
+            cpu.power(self.ty)
 
             self.latency -= 1
             return True
@@ -107,10 +108,12 @@ try:
 
             continue
 
+        cpu.power('baseline')
         to_remove = set()
 
         for unit in units:
             if not unit.tick():
+                cpu.power('writeback')
                 to_remove.add(unit)
                 cpu.unlock_unit(unit.ty)
 
@@ -219,6 +222,7 @@ try:
                         fetch_rip = None
 
                     log('Issue', issue)
+                    cpu.power('issue')
 
         if not serialize and not stall_issue:
             issue = decode if not flush_frontend else None
@@ -226,6 +230,7 @@ try:
         if not flush_frontend:
             if not stall_issue or not decode:
                 decode = fetch
+                cpu.power('decode')
             
             if not stall_issue or not decode or not fetch:
                 if not fetch_rip:
@@ -236,6 +241,7 @@ try:
                 log('Fetch', fetch)
 
                 fetch_rip += fetch.len
+                cpu.power('fetch')
         else:
             fetch = decode = fetch_rip = None
 
@@ -246,7 +252,12 @@ finally:
     print("CPU without dynamic scheduler done.")
 
     ipc = retired / cycles if cycles else 0
-    print(f"Executed {retired} insns in {cycles} cycles (IPC={ipc:03})")
+    print(f'Executed {retired} insns in {cycles} cycles')
+
+    picojoules = cpu.power_total / cycles if cycles else 0
+    watts = picojoules * 1e-12 * cpu.freq
+
+    print(f'IPC={ipc:.03}, energy={picojoules}pJ, power={watts:.05}W')
 
 print('\nTotal serializing insns:', total_serials)
 print('Top 25 serializing insns:')

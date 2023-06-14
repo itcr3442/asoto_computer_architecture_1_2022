@@ -7,7 +7,10 @@ def gen_search_str(mnemonic, op_types, op_kinds):
 class Cpu:
     def __init__(self):
         self.master = stub.rsp()
+        self.freq = 3.5e9
+
         self.cycles = 0
+        self.power_total = 0
 
         self.units = {
             'alu': 4,
@@ -15,6 +18,20 @@ class Cpu:
             'load': 2,
             'store': 4,
             'mul': 3,
+        }
+
+        self.power_per = {
+            'baseline': 3429,
+            'fetch': 249,
+            'decode': 1644,
+            'issue': 548,
+            'writeback': 274,
+
+            'alu': 822,
+            'branch': 2055,
+            'load': 4110,
+            'store': 4110,
+            'mul': 8220,
         }
 
         self.insns = {
@@ -91,6 +108,7 @@ class Cpu:
             "XOR, ['REGISTER', 'REGISTER'], ['R32_OR_MEM', 'R32_REG']"           : ("alu", 1)
         }
 
+
     def lock_unit(self, unit):
         if not self.units[unit]:
             return False
@@ -98,5 +116,10 @@ class Cpu:
         self.units[unit] -= 1
         return True
 
+
     def unlock_unit(self, unit):
         self.units[unit] += 1
+
+
+    def power(self, unit):
+        self.power_total += self.power_per[unit]
