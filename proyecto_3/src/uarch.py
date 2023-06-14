@@ -4,60 +4,35 @@ import stub
 def gen_search_str(mnemonic, op_types, op_kinds):
     return f"{mnemonic}, {op_types}, {op_kinds}"
 
-class Functional_Units:
-    def __init__(self, alus=4, branches=2, loads=2, stores=4, muls=3) :
-        self.alus = alus
-        self.branches = branches
-        self.loads = loads
-        self.stores = stores
-        self.muls = muls
-
-    def lock(self, unit):
-        match unit:
-            case "alu":
-                if self.alus <= 0:
-                    return False
-                else:
-                    self.alus -= 1
-                    return True
-
-            case "branch":
-                if self.branches <= 0:
-                    return False
-                else:
-                    self.branches -= 1
-                    return True
-
-            case "load":
-                if self.loads <= 0:
-                    return False
-                else:
-                    self.loads -= 1
-                    return True
-
-            case "store":
-                if self.stores <= 0:
-                    return False
-                else:
-                    self.stores -= 1
-                    return True
-
-            case "mul":
-                if self.muls <= 0:
-                    return False
-                else:
-                    self.muls -= 1
-                    return True
-
-            case _:
-                raise ValueError(f"No funcional unit: {unit}")
-
 class Cpu:
     def __init__(self):
         self.master = stub.rsp()
-        self.cycles = 0
+        self.freq = 3.5e9
 
-        self.units = Functional_Units()
+        self.cycles = 0
+        self.power_total = 0
+
+        self.units = {
+            'alu': 4,
+            'branch': 2,
+            'load': 2,
+            'store': 4,
+            'mul': 3,
+        }
+
+        self.power_per = {
+            'baseline': 3429,
+            'fetch': 249,
+            'decode': 1644,
+            'issue': 548,
+            'writeback': 274,
+
+            'alu': 822,
+            'branch': 2055,
+            'load': 4110,
+            'store': 4110,
+            'mul': 8220,
+        }
 
         self.insns = {
             "ADD, ['REGISTER', 'IMMEDIATE32TO64'], ['R64_OR_MEM', 'IMM32SEX64']" : ("alu", 1),
@@ -132,3 +107,19 @@ class Cpu:
             "TEST, ['REGISTER', 'IMMEDIATE'], ['AL', 'IMM8']"                    : ("alu", 1),
             "XOR, ['REGISTER', 'REGISTER'], ['R32_OR_MEM', 'R32_REG']"           : ("alu", 1)
         }
+
+
+    def lock_unit(self, unit):
+        if not self.units[unit]:
+            return False
+
+        self.units[unit] -= 1
+        return True
+
+
+    def unlock_unit(self, unit):
+        self.units[unit] += 1
+
+
+    def power(self, unit):
+        self.power_total += self.power_per[unit]
