@@ -244,7 +244,9 @@ try:
 finally:
     cpu.master.close()
     print("CPU without dynamic scheduler done.")
-    print(f"Executed {retired} insns in {cycles} cycles (IPC={retired / cycles:.03})")
+
+    ipc = retired / cycles if cycles else 0
+    print(f"Executed {retired} insns in {cycles} cycles (IPC={ipc:03})")
 
 print('\nTotal serializing insns:', total_serials)
 print('Top 25 serializing insns:')
