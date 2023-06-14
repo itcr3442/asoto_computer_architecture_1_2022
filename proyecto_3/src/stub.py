@@ -1,4 +1,4 @@
-import socket
+import signal, socket
 from iced_x86 import *
 from typing import Dict, Sequence
 from types import ModuleType
@@ -75,6 +75,8 @@ class rsp:
         """
         print(self.ping(b"qXfer:features:read:target.xml:0,1048576"))
 
+        self.breakpoint = False
+
     def close(self, *, detach=True):
         if self.sock:
             if detach:
@@ -119,6 +121,33 @@ class rsp:
     def ping_ok(self, data):
         assert self.ping(data) == b"OK"
 
+    def ping_stop(self, data):
+        r = self.ping(data, check_err=True)
+
+        exited = False
+        self.breakpoint = False
+
+        match r[:1]:
+            case b"W":
+                exited = True
+
+            case b"T":
+                sig = signal.Signals(int(str(r[1:3], 'ascii'), 16))
+                match sig:
+                    case signal.SIGTRAP:
+                        pass
+
+                    case _:
+                        assert False, f'target received {repr(sig)}'
+
+            case _:
+                assert False, f'target stopped with reason {repr(r)}'
+
+        if exited:
+            self.close(detach=False)
+
+        return not exited
+
     def exp_byte(self, byte):
         data = self.rcv_byte()
         assert data == byte, f"{repr(data)} != {repr(byte)}"
@@ -149,13 +178,19 @@ class rsp:
         self.ping_ok(b"M" + to_qhex(addr, False) + b"," +
                      to_qhex(len(data), False) + b":" + data.hex().encode("ascii"))
 
-    def s(self, addr=None):
-        r = self.ping(b"s" + (to_qhex(addr, False)
-                      if addr is not None else b""), check_err=True)
-        exited = r[:1] == b"W"
-        if exited:
-            self.close(detach=False)
-        return not exited
+    def step(self, addr=None):
+        is_break = self.rm(addr if addr is not None else self.rip(), 1) == b'\xcc' # int3
+
+        running = self.ping_stop(b"s" + (to_qhex(addr, False) if addr is not None else b""))
+        if running:
+            self.breakpoint = is_break
+
+        return running
+
+    def cont(self):
+        running = self.ping_stop(b"c")
+        self.breakpoint = running
+        return running
 
     def rip(self):
         return self.rr(16)
@@ -175,7 +210,7 @@ class rsp:
     def dbg_step(self):
         rip, insn = self.get_insn()
         print(f"0x{rip:016x}: {insn}")
-        return self.s()
+        return self.step()
 
     def get_insn_info(self, instr):
         op_code = instr.op_code()
